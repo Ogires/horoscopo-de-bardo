@@ -30,6 +30,12 @@ describe("generarDia", () => {
     expect(c.cuerpo.stream).toBeUndefined();
   });
 
+  it("el esfuerzo de razonamiento se puede subir a medium", async () => {
+    const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+    await generarDia(FECHA, { ...deps(), esfuerzo: "medium" });
+    expect(llamadas[0].cuerpo.reasoning_effort).toBe("medium");
+  });
+
   it("hasta 3 signos inválidos salen del banco y se queda el modelo", async () => {
     const largo = { texto: "x".repeat(200) };
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { rust: largo, go: largo })) : null));

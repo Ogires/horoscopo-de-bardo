@@ -20,7 +20,11 @@ export interface DepsGeneracion {
   modelos: string[];
   /** Textos de los últimos 14 días por signo, del más reciente al más antiguo */
   historial: Map<string, string[]>;
+  /** reasoning_effort de Groq; por defecto "low" */
+  esfuerzo?: Esfuerzo;
 }
+
+export type Esfuerzo = "low" | "medium";
 
 export interface DiaGenerado {
   profecias: Profecia[];
@@ -29,7 +33,12 @@ export interface DiaGenerado {
   tokens: number;
 }
 
-async function pedirAGroq(apiKey: string, modelo: string, usuario: string): Promise<{ profecias: RespuestaIa[]; tokens: number }> {
+async function pedirAGroq(
+  apiKey: string,
+  modelo: string,
+  usuario: string,
+  esfuerzo: Esfuerzo,
+): Promise<{ profecias: RespuestaIa[]; tokens: number }> {
   const r = await fetch(GROQ_URL, {
     method: "POST",
     signal: AbortSignal.timeout(60_000),
@@ -43,7 +52,7 @@ async function pedirAGroq(apiKey: string, modelo: string, usuario: string): Prom
       // Entrada ~2.900 + 3.500 de tope: por debajo de los 8K tokens/minuto de Groq
       max_tokens: 3500,
       temperature: 0.9,
-      reasoning_effort: "low",
+      reasoning_effort: esfuerzo,
       response_format: { type: "json_schema", json_schema: { name: "horoscopo", strict: true, schema: ESQUEMA } },
     }),
   });
@@ -66,7 +75,7 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
 
   for (const modelo of deps.modelos) {
     try {
-      const r = await pedirAGroq(deps.apiKey, modelo, usuario);
+      const r = await pedirAGroq(deps.apiKey, modelo, usuario, deps.esfuerzo ?? "low");
       tokens += r.tokens;
       const porSigno = new Map(r.profecias.map((p) => [p.signo, p]));
       // Más lo que ya se ha aceptado hoy; empieza de cero con cada modelo
