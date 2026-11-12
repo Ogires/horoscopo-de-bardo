@@ -90,6 +90,7 @@ src/
 data/
   banco.json           profecías escritas a mano (7 por signo)
   ganchos.json         hechos ciertos de cada lenguaje (15 por signo)
+  matices.json         matices de reserva para «Compatible con» (10)
   puertos.json         puertos con su servicio (8080, 5432, 6379…)
 public/                CSS, fuentes, og.png, openapi.json, favicon
 migrations/0001_inicial.sql
@@ -136,7 +137,7 @@ Para que la IA tenga menos que inventar (y menos que validar), el código sortea
 - **El puerto de la suerte**, de `data/puertos.json`, con su servicio: «5432 (PostgreSQL)».
 - **El signo compatible**, otro de los doce.
 
-La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»**.
+La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»** (si el matiz se pasa de largo, sale de una lista de reserva: sección 5.4).
 
 ### 5.2 La llamada
 
@@ -147,14 +148,17 @@ La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»**.
 
 ### 5.3 El prompt del sistema (resumen)
 
-- **Voz:** un bardo pesimista que canta desgracias pequeñas e inevitables y las remata con ironía o resignación: se lee como una profecía, no como un parte de incidencias. Habla a quienes programan en cada lenguaje en segunda persona del plural («os», «vuestro», «tendréis»), nunca de tú, con frases que se entienden a la primera. Español de España correcto, sin anglicismos innecesarios («probar» y no «testear»; nada de «bindear», «payload» ni «legacy»), salvo los nombres técnicos del propio lenguaje.
+- **Voz:** un bardo pesimista que canta desgracias pequeñas e inevitables y las remata con ironía o resignación: se lee como una profecía, no como un parte de incidencias. Habla a quienes programan en cada lenguaje en segunda persona del plural («os», «vuestro», «tendréis»), nunca de tú, con frases que se entienden a la primera. Español de España correcto, sin anglicismos innecesarios («probar» y no «testear»; nada de «runtime» ni «legacy»), salvo los nombres técnicos del propio lenguaje.
+- **Conjugación:** el vosotros tiene que estar bien conjugado («pondréis», «crearéis», «enviaréis», «dejasteis», «habéis»; el futuro acaba en «-réis», con tilde). Si el modelo duda, el sujeto pasa a ser la cosa del lenguaje en tercera persona («el compilador», «un NULL», «el unwrap()») y el vosotros se queda en «os» y «vuestro».
 - **La profecía se construye alrededor del gancho, que es cierto:** el modelo no añade otros hechos técnicos que no estén en el gancho, salvo que sean de conocimiento general en ese lenguaje y esté seguro de que son ciertos. Es lo que hace el banco: un rasgo real del lenguaje contado como desgracia inevitable.
-- **Forma del texto:** dos frases, la desgracia y un **remate** (un giro irónico, la resignación del bardo o una consecuencia absurda).
-- **Arranques:** la mayoría empiezan por el sujeto o por el verbo («Vuestro…», «Pondréis…», «Bastará un…»). Las fórmulas de juglar («os lo advierto», «escuchad», «cantan los astros») van en medio o al final, y como mucho en tres profecías del día. Como mucho dos profecías del día empiezan por la misma palabra, también si es «El» o «La».
-- **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta, con gracia y sin faltar a la verdad, cómo o por qué se llevan los dos lenguajes, y varía de forma: «a regañadientes», «solo los viernes», «por miedo», «para discutir de tipos», «que también sabe hacer die()». Como mucho tres matices del día empiezan por «que también».
+- **Fidelidad al gancho:** el gancho se cuenta tal cual, sin exagerarlo ni añadirle consecuencias técnicas. Si dice que `map()` se salta los huecos de un array, la profecía no puede decir que el array tendrá menos elementos. La gracia va en la escena y el remate, no en inventar.
+- **Forma del texto:** dos frases, la desgracia y un **remate concreto**: una escena o una consecuencia visible en el día de quien programa (quién lo ve, cuándo, qué hace), nunca una frase abstracta como «La claridad será una ilusión». El prompt lleva un par «Mal / Bien» de remates escrito para él, que no está en el banco.
+- **Arranques:** se mezclan el sujeto en tercera persona («Un NULL…», «El compilador…»), el verbo en futuro («Pondréis…»), «Bastará un…» y las subordinadas («Cuando…», «Si…»). Como mucho dos profecías del día empiezan por la misma palabra, también si es «El» o «La», y como mucho cuatro empiezan por un verbo en vosotros, para que el día no suene a plantilla. Las fórmulas de juglar («os lo advierto», «escuchad», «cantan los astros») van en medio o al final, y como mucho en tres profecías del día.
+- **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta, con gracia y sin faltar a la verdad, cómo o por qué se llevan los dos lenguajes, en **dos a cinco palabras**, y varía de forma: «a regañadientes», «solo los viernes», «por miedo», «para discutir de tipos», «que también sabe hacer die()». Como mucho tres matices del día empiezan por «que también».
 - **Nunca:** personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, frontend, QA…); política, religión, salud, dinero real ni despidos; palabrotas; enlaces; emojis (los pone el código); el carácter `@`, tampoco en anotaciones o decoradores.
-- **Ejemplos de tono:** el prompt lleva cuatro ejemplos completos (gancho, texto, «Evita», compatible y matiz) con la longitud pedida, su remate y arranques distintos, ninguno con una fórmula de juglar al principio. Sus ganchos no están en `data/ganchos.json` y sus textos no están en el banco. Son solo para el tono: el prompt pide que no se repitan, y el filtro de copias los vigila (sección 5.4).
-- **Longitudes:** el prompt pide un texto de 100 a 150 caracteres; «Evita» y el matiz, de 60 y 40 como mucho. El validador acepta textos de 80 a 180, para no tirar una buena profecía por unos caracteres. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
+- **Ejemplos de tono:** el prompt lleva cuatro ejemplos completos (gancho, texto, «Evita», compatible y matiz) con la longitud pedida, arranques distintos (uno con subordinada) y remates que son escenas y no añaden hechos técnicos al gancho, ninguno con una fórmula de juglar al principio. Sus ganchos no están en `data/ganchos.json` y sus textos no están en el banco. Son solo para el tono: el prompt pide que no se copien, y el filtro de copias los vigila (sección 5.4).
+- **Longitudes:** el prompt pide un texto de 100 a 150 caracteres, un «Evita» de 60 como mucho y el matiz **en palabras** (de dos a cinco), porque el modelo no cuenta caracteres: cuando se le pedían 40 como mucho, la mayoría se pasaban. El validador acepta textos de 80 a 180, para no tirar una buena profecía por unos caracteres, y matices de 3 a 40. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
+- **Tamaño:** el prompt y el mensaje del día se mantienen en unos 2.600 tokens de entrada con dos días de historial, para que la entrada más el tope de salida quepan en los 8K tokens por minuto de Groq.
 
 ### 5.4 Validación
 
@@ -162,7 +166,9 @@ El esquema lo garantiza `strict: true`, pero el Worker vuelve a comprobarlo (los
 1. **Longitudes** de la sección 5.3.
 2. **Lista de palabras vetadas** (insultos y temas sensibles) y nada de URLs ni menciones `@`.
 3. **«Evita» sin «no»:** si empieza por «no», se descarta, porque tras la etiqueta se leería al revés.
-4. **Repeticiones:** si el texto comparte una secuencia de 6 palabras con cualquier profecía de los últimos 14 días (de cualquier signo), con el banco, con los ejemplos del prompt o con otra profecía ya aceptada ese mismo día, se descarta. Es el filtro de copias de Ficha de Rol. Todas las secuencias van en un solo `Set`, para quedar muy por debajo de los 10 ms de CPU del cron.
+4. **Repeticiones:** si el texto comparte una secuencia de 6 palabras con cualquier profecía de los últimos 14 días (de cualquier signo), con el banco, con los ejemplos del prompt y su remate «Bien», o con otra profecía ya aceptada ese mismo día, se descarta. Es el filtro de copias de Ficha de Rol. Todas las secuencias van en un solo `Set`, para quedar muy por debajo de los 10 ms de CPU del cron.
+
+**Matiz de reserva:** si lo único que falla de una profecía es la longitud del matiz, no se descarta. Se quedan el texto y el «Evita» de la IA, y el matiz sale de una lista fija de diez matices genéricos (`data/matices.json`: «a regañadientes», «con reservas», «sin mirarse a la cara»…), elegido por un hash de la fecha y el signo, así que el mismo día da siempre el mismo. El resto de la validación se repite con el matiz nuevo. No cuenta como fallo: queda apuntado como `matiz_reserva`, junto con el matiz que se tiró, para revisar el prompt.
 
 Si fallan **3 signos o menos**, esos salen del banco. Si fallan más, se descarta la respuesta y se prueba el siguiente modelo.
 
@@ -276,7 +282,7 @@ Según OWASP Top 10 2025 y OWASP LLM Top 10 2025:
 - **Fechas:** día de Madrid y fecha objetivo en las cuatro horas del cron, en invierno, en verano y en los cambios de hora de marzo y octubre. Ninguna ruta sirve una fecha posterior a hoy.
 - **Sorteo y banco:** deterministas por fecha; cada signo recibe un gancho suyo, y sus quince sin repetir en cada ciclo de quince días; el compatible nunca es el propio signo. Contenido de `data/ganchos.json`: 15 por signo, distintos, de 90 caracteres como mucho, sin `@` ni enlaces.
 - **Validación:** signo que falta o se repite, longitudes, palabras vetadas, URLs, «Evita» que empieza por «no» y repeticiones de 6 palabras con otros signos, el banco y el propio día.
-- **Cadena:** 120b → 20b → banco, con `fetch` parcheado.
+- **Cadena:** 120b → 20b → banco, con `fetch` parcheado; el matiz de reserva cuando solo falla su longitud, y los parámetros de cada modelo (razonamiento y `strict`).
 - **Cron:** idempotencia de las cuatro horas, sin duplicar el día ni el mensaje; reserva de Telegram con fallo antes y después de enviar; avisos al administrador.
 - **Salida:** escape en HTML, SVG y Telegram con textos maliciosos; partición de líneas y altura de la tarjeta; el mensaje de Telegram con los doce textos al máximo cabe.
 - **API:** rutas, alias, errores, CORS, métodos, `ETag` y 304, cabeceras de caché (también la de 60 s del banco) y que `openapi.json` coincide con las rutas.
