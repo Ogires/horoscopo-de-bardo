@@ -30,6 +30,8 @@ export function motivoInvalida(p: Candidata, signo: string): string | null {
   if (!largo(p.texto, LIMITES.texto)) return "longitud_texto";
   if (!largo(p.evita, LIMITES.evita)) return "longitud_evita";
   if (!largo(p.compatible.matiz, LIMITES.matiz)) return "longitud_matiz";
+  // Se lee tras la etiqueta «Evita:», así que «no confíes…» diría lo contrario
+  if (/^no\s/iu.test(p.evita.trim())) return "evita_negada";
   if (!SLUGS.has(p.compatible.signo) || p.compatible.signo === signo) return "compatible";
   const todo = `${p.texto} ${p.evita} ${p.compatible.matiz}`;
   if (RE_VETADA.test(todo)) return "vetada";

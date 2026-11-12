@@ -21,6 +21,14 @@ describe("motivoInvalida", () => {
     expect(motivoInvalida(con({ compatible: { signo: "go", matiz: "x".repeat(41) } }), "rust")).toBe("longitud_matiz");
   });
 
+  it("«Evita» va en positivo: si empieza por «no» se leería al revés", () => {
+    expect(motivoInvalida(con({ evita: "no confíes en logs vacíos" }), "rust")).toBe("evita_negada");
+    expect(motivoInvalida(con({ evita: "No ignores los warnings" }), "rust")).toBe("evita_negada");
+    expect(motivoInvalida(con({ evita: "NO tocar producción" }), "rust")).toBe("evita_negada");
+    expect(motivoInvalida(con({ evita: "nombrar variables con una letra" }), "rust")).toBeNull();
+    expect(motivoInvalida(con({ evita: "fiaros de lo que no habéis probado" }), "rust")).toBeNull();
+  });
+
   it("el compatible es otro signo que existe", () => {
     expect(motivoInvalida(con({ compatible: { signo: "rust", matiz: "consigo mismo" } }), "rust")).toBe("compatible");
     expect(motivoInvalida(con({ compatible: { signo: "c", matiz: "a regañadientes" } }), "rust")).toBe("compatible");
