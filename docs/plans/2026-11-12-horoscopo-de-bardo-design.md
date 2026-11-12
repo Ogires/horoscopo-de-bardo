@@ -25,7 +25,7 @@ El diseño se revisó antes de construirlo con dos modelos externos (Gemini y GL
 ## 2. Alcance de la primera versión
 
 1. **Doce signos:** Rust, JavaScript, Python, Java, C#, Go, PHP, COBOL, TypeScript, SQL, Kotlin y Haskell.
-2. **Cada profecía tiene cuatro campos:** el texto del Bardo (dos o tres frases), el puerto de la suerte con su servicio, «Compatible con» (otro de los doce signos con un matiz) y «Evita» (un consejo).
+2. **Cada profecía tiene cuatro campos:** el texto del Bardo (dos o tres frases), el puerto de la suerte con su servicio, «Compatible con» (otro de los doce signos con un matiz) y «Evita» (lo que conviene evitar hoy).
 3. **Web:** portada con los doce signos de hoy, una página por signo (`/rust`) con el fragmento para el README listo para copiar, y un archivo por fecha (`/h/2026-11-12`). Una og:image general de 1200×627.
 4. **API pública:** `/api/v1/signos`, `/api/v1/hoy`, `/api/v1/signos/{signo}` y `/api/v1/dias/{fecha}`, con CORS abierto y un `openapi.json`.
 5. **Tarjeta SVG** (`/tarjeta/rust.svg`) para el README de GitHub, en modo claro y oscuro.
@@ -132,11 +132,11 @@ Cada profecía:
 
 Para que la IA tenga menos que inventar (y menos que validar), el código sortea antes de llamarla, de forma determinista a partir de la fecha:
 
-- **El tema del día de cada signo:** doce temas distintos sacados de `data/temas.json` (unos 60: el deploy del viernes, la revisión de código, las dependencias, la documentación, las estimaciones, el código heredado, los tests que fallan a veces, la guardia de madrugada…). Sirve para que no se repitan.
+- **El tema del día de cada signo:** doce temas distintos sacados de `data/temas.json` (60: el deploy del viernes, la revisión de código, las dependencias, la documentación, las estimaciones, el código heredado, los tests que fallan a veces, la guardia de madrugada…). Rotan en **ciclos de cinco días**: cada ciclo baraja los 60 temas con su propia semilla y cada día toma doce seguidos, así que en un ciclo ningún tema sale dos veces, tampoco en otro signo. Sirve para que no se repitan.
 - **El puerto de la suerte**, de `data/puertos.json`, con su servicio: «5432 (PostgreSQL)».
 - **El signo compatible**, otro de los doce.
 
-La IA escribe solo **el texto, el consejo de «Evita» y el matiz de «Compatible con»**.
+La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»**.
 
 ### 5.2 La llamada
 
@@ -147,10 +147,13 @@ La IA escribe solo **el texto, el consejo de «Evita» y el matiz de «Compatibl
 
 ### 5.3 El prompt del sistema (resumen)
 
-- **Voz:** un bardo pesimista que canta desgracias inevitables. Español de España actual, con algún giro de juglar suelto («os lo advierto», «a por vos»), pero frases que se entienden a la primera.
-- **El chiste sale del lenguaje y de su ecosistema:** el compilador, el gestor de paquetes, los errores típicos, las herramientas.
+- **Voz:** un bardo pesimista que canta desgracias inevitables. Habla a quienes programan en cada lenguaje en segunda persona del plural («os», «vuestro», «tendréis»), nunca de tú, con algún giro de juglar suelto («os lo advierto», «escuchad», «cantan los astros») y frases que se entienden a la primera. Español de España correcto, sin anglicismos innecesarios.
+- **El chiste sale del lenguaje y de su ecosistema:** el compilador, los errores con nombre propio, el gestor de paquetes, las herramientas y sus manías. El tema del día es solo un pretexto que se lleva a ese terreno: si el texto valdría igual para otro lenguaje, no vale.
+- **Lo técnico tiene que ser cierto:** si el modelo no está seguro de que un error o un comportamiento existe, usa otro.
+- **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta con gracia cómo o por qué se llevan los dos lenguajes («que también sabe hacer die()», «solo los viernes»), y es distinto en cada signo.
 - **Nunca:** personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, frontend, QA…); política, religión, salud, dinero real ni despidos; palabrotas; enlaces; emojis (los pone el código).
-- **Variedad:** como mucho dos profecías del día empiezan igual (por ejemplo, con «Hoy»).
+- **Variedad:** como mucho dos profecías del día empiezan por la misma palabra, también si es «El» o «La», y ninguna abre repitiendo el enunciado del tema.
+- **Ejemplos de tono:** el prompt lleva tres ejemplos completos (tema, texto, «Evita», compatible y matiz) que no están en el banco, en los que un tema genérico, uno de ellos de oficina, se lleva al terreno de un lenguaje concreto. Son solo para el tono: el prompt pide que no se repitan, y el filtro de copias los vigila (sección 5.4).
 - **Longitudes:** texto de 80 a 180 caracteres; «Evita» y el matiz, de 60 y 40 como mucho. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
 
 ### 5.4 Validación
@@ -158,7 +161,8 @@ La IA escribe solo **el texto, el consejo de «Evita» y el matiz de «Compatibl
 El esquema lo garantiza `strict: true`, pero el Worker vuelve a comprobarlo (los doce signos, sin repetir ni faltar). Después, cada profecía pasa por:
 1. **Longitudes** de la sección 5.3.
 2. **Lista de palabras vetadas** (insultos y temas sensibles) y nada de URLs ni menciones `@`.
-3. **Repeticiones:** si el texto comparte una secuencia de 6 palabras con ese signo en los últimos 14 días, se descarta. Es el filtro de copias de Ficha de Rol. Las secuencias de los 14 días van en un solo `Set`, para quedar muy por debajo de los 10 ms de CPU del cron.
+3. **«Evita» sin «no»:** si empieza por «no», se descarta, porque tras la etiqueta se leería al revés.
+4. **Repeticiones:** si el texto comparte una secuencia de 6 palabras con cualquier profecía de los últimos 14 días (de cualquier signo), con el banco, con los ejemplos del prompt o con otra profecía ya aceptada ese mismo día, se descarta. Es el filtro de copias de Ficha de Rol. Todas las secuencias van en un solo `Set`, para quedar muy por debajo de los 10 ms de CPU del cron.
 
 Si fallan **3 signos o menos**, esos salen del banco. Si fallan más, se descarta la respuesta y se prueba el siguiente modelo.
 
@@ -270,8 +274,8 @@ Según OWASP Top 10 2025 y OWASP LLM Top 10 2025:
 **TDD con Vitest + `@cloudflare/vitest-plugin`**, con D1 de pruebas por migraciones:
 
 - **Fechas:** día de Madrid y fecha objetivo en las cuatro horas del cron, en invierno, en verano y en los cambios de hora de marzo y octubre. Ninguna ruta sirve una fecha posterior a hoy.
-- **Sorteo y banco:** deterministas por fecha; doce temas distintos; el compatible nunca es el propio signo.
-- **Validación:** signo que falta o se repite, longitudes, palabras vetadas, URLs y repeticiones de 6 palabras.
+- **Sorteo y banco:** deterministas por fecha; doce temas distintos, y sesenta sin repetir en cada ciclo de cinco días; el compatible nunca es el propio signo.
+- **Validación:** signo que falta o se repite, longitudes, palabras vetadas, URLs, «Evita» que empieza por «no» y repeticiones de 6 palabras con otros signos, el banco y el propio día.
 - **Cadena:** 120b → 20b → banco, con `fetch` parcheado.
 - **Cron:** idempotencia de las cuatro horas, sin duplicar el día ni el mensaje; reserva de Telegram con fallo antes y después de enviar; avisos al administrador.
 - **Salida:** escape en HTML, SVG y Telegram con textos maliciosos; partición de líneas y altura de la tarjeta; el mensaje de Telegram con los doce textos al máximo cabe.
