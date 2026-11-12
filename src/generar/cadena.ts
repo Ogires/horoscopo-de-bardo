@@ -27,10 +27,18 @@ export interface DepsGeneracion {
 export type Esfuerzo = "low" | "medium";
 const TOPE_SALIDA: Record<Esfuerzo, number> = { low: 3500, medium: 5000 };
 
+export interface Descartada {
+  signo: string;
+  texto: string;
+  motivo: string;
+}
+
 export interface DiaGenerado {
   profecias: Profecia[];
   modelo: string | null;
   fallos: string[];
+  /** Lo que propuso la IA y no pasó la validación, para revisar el prompt */
+  descartadas: Descartada[];
   tokens: number;
 }
 
@@ -74,6 +82,7 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
   const recientes = new Map([...deps.historial].map(([signo, textos]) => [signo, textos.slice(0, 3)]));
   const usuario = mensajeDelDia(fecha, sorteo, recientes);
   const fallos: string[] = [];
+  const descartadas: Descartada[] = [];
   let tokens = 0;
 
   for (const modelo of deps.modelos) {
@@ -93,16 +102,17 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
         if (!candidata || motivo) {
           malas++;
           fallos.push(`${modelo}:${s.signo}:${motivo}`);
+          if (candidata && motivo) descartadas.push({ signo: s.signo, texto: candidata.texto, motivo });
           return profeciaDelBanco(fecha, s);
         }
         for (const sexteto of sextetos(candidata.texto)) vistos.add(sexteto);
         return { signo: s.signo, ...candidata, puerto: s.puerto, origen: "ia" };
       });
-      if (malas <= MAX_MALAS) return { profecias, modelo, fallos, tokens };
+      if (malas <= MAX_MALAS) return { profecias, modelo, fallos, descartadas, tokens };
       fallos.push(`${modelo}:demasiadas_invalidas`);
     } catch (e) {
       fallos.push(`${modelo}:${String(e).slice(0, 80)}`);
     }
   }
-  return { profecias: sorteo.map((s) => profeciaDelBanco(fecha, s)), modelo: null, fallos, tokens };
+  return { profecias: sorteo.map((s) => profeciaDelBanco(fecha, s)), modelo: null, fallos, descartadas, tokens };
 }

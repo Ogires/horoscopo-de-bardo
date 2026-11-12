@@ -56,6 +56,24 @@ describe("generarDia", () => {
     expect(g.profecias.filter((p) => p.origen === "banco").map((p) => p.signo).sort()).toEqual(["go", "rust"]);
   });
 
+  it("las descartadas guardan el texto que propuso la IA y su motivo", async () => {
+    const ia = profeciasIa(FECHA, { rust: { texto: "x".repeat(200) }, php: { evita: "no tocar producción" } });
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(ia.filter((p) => p.signo !== "go")) : null));
+    const g = await generarDia(FECHA, deps());
+    expect(g.modelo).toBe("openai/gpt-oss-120b");
+    expect(g.descartadas).toEqual([
+      { signo: "rust", texto: "x".repeat(200), motivo: "longitud_texto" },
+      { signo: "php", texto: ia.find((p) => p.signo === "php")!.texto, motivo: "evita_negada" },
+    ]);
+    // Go no llegó: sale en fallos, pero no hay texto que enseñar
+    expect(g.fallos).toContain("openai/gpt-oss-120b:go:falta");
+  });
+
+  it("sin descartes, la lista de descartadas va vacía", async () => {
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+    expect((await generarDia(FECHA, deps())).descartadas).toEqual([]);
+  });
+
   it("con 4 o más inválidos prueba el modelo de respaldo", async () => {
     const largo = { texto: "x".repeat(200) };
     const malas = { rust: largo, go: largo, php: largo, sql: largo };
