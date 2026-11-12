@@ -56,17 +56,42 @@ describe("generarDia", () => {
     expect(g.profecias.filter((p) => p.origen === "banco").map((p) => p.signo).sort()).toEqual(["go", "rust"]);
   });
 
-  it("las descartadas guardan el texto que propuso la IA y su motivo", async () => {
-    const ia = profeciasIa(FECHA, { rust: { texto: "x".repeat(200) }, php: { evita: "no tocar producción" } });
+  it("las descartadas guardan lo que propuso la IA (texto, «Evita» y matiz), el modelo y el motivo", async () => {
+    const ia = profeciasIa(FECHA, { rust: { texto: "x".repeat(200) }, php: { evita: "no tocar producción" }, sql: { matiz: "m".repeat(41) } });
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(ia.filter((p) => p.signo !== "go")) : null));
     const g = await generarDia(FECHA, deps());
-    expect(g.modelo).toBe("openai/gpt-oss-120b");
-    expect(g.descartadas).toEqual([
-      { signo: "rust", texto: "x".repeat(200), motivo: "longitud_texto" },
-      { signo: "php", texto: ia.find((p) => p.signo === "php")!.texto, motivo: "evita_negada" },
+    // Tres inválidas y una que falta: cuatro malas, así que también se prueba el respaldo
+    const de = (signo: string) => ia.find((p) => p.signo === signo)!;
+    const m = "openai/gpt-oss-120b";
+    expect(g.descartadas.filter((d) => d.motivo !== "modelo_descartado" && d.modelo === m)).toEqual([
+      { modelo: m, signo: "rust", texto: "x".repeat(200), evita: de("rust").evita, matiz: de("rust").matiz, motivo: "longitud_texto" },
+      { modelo: m, signo: "php", texto: de("php").texto, evita: "no tocar producción", matiz: de("php").matiz, motivo: "evita_negada" },
+      { modelo: m, signo: "sql", texto: de("sql").texto, evita: de("sql").evita, matiz: "m".repeat(41), motivo: "longitud_matiz" },
     ]);
     // Go no llegó: sale en fallos, pero no hay texto que enseñar
-    expect(g.fallos).toContain("openai/gpt-oss-120b:go:falta");
+    expect(g.fallos).toContain(`${m}:go:falta`);
+  });
+
+  it("si se descarta el modelo entero, sus profecías válidas también salen en descartadas", async () => {
+    const largo = { texto: "x".repeat(200) };
+    const ia = profeciasIa(FECHA, { rust: largo, go: largo, php: largo, sql: largo });
+    interceptar((url, cuerpo) => {
+      if (url !== GROQ_URL) return null;
+      return respuestaGroq(cuerpo.model === "openai/gpt-oss-120b" ? ia : profeciasIa(FECHA));
+    });
+    const g = await generarDia(FECHA, deps());
+    expect(g.modelo).toBe("openai/gpt-oss-20b");
+    const delPrimero = g.descartadas.filter((d) => d.modelo === "openai/gpt-oss-120b");
+    expect(delPrimero).toHaveLength(12);
+    expect(delPrimero.filter((d) => d.motivo === "longitud_texto").map((d) => d.signo).sort()).toEqual(["go", "php", "rust", "sql"]);
+    const validas = delPrimero.filter((d) => d.motivo === "modelo_descartado");
+    expect(validas).toHaveLength(8);
+    const { signo } = validas[0];
+    expect(validas[0]).toEqual({
+      modelo: "openai/gpt-oss-120b", signo, texto: ia.find((p) => p.signo === signo)!.texto,
+      evita: "tocar producción antes del café", matiz: "a regañadientes", motivo: "modelo_descartado",
+    });
+    expect(g.descartadas.filter((d) => d.modelo === "openai/gpt-oss-20b")).toEqual([]);
   });
 
   it("sin descartes, la lista de descartadas va vacía", async () => {

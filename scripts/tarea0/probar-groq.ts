@@ -63,6 +63,9 @@ for (let i = 0; i < 3; i++) {
   }
   if (g.descartadas.length) {
     console.log("--- Descartadas");
-    for (const d of g.descartadas) console.log(`${nombre(d.signo)} · ${d.motivo} (${[...d.texto].length}) ${d.texto}`);
+    for (const d of g.descartadas) {
+      console.log(`${nombre(d.signo)} · ${d.modelo} · ${d.motivo} (${[...d.texto].length}) ${d.texto}`);
+      console.log(`   Evita (${[...d.evita].length}): ${d.evita} · Matiz (${[...d.matiz].length}): ${d.matiz}`);
+    }
   }
 }

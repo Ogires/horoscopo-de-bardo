@@ -28,8 +28,12 @@ export type Esfuerzo = "low" | "medium";
 const TOPE_SALIDA: Record<Esfuerzo, number> = { low: 3500, medium: 5000 };
 
 export interface Descartada {
+  modelo: string;
   signo: string;
   texto: string;
+  evita: string;
+  matiz: string;
+  /** El de la validación, o «modelo_descartado» si era válida pero se tiró la respuesta entera */
   motivo: string;
 }
 
@@ -93,6 +97,8 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
       // Más lo que ya se ha aceptado hoy; empieza de cero con cada modelo
       const vistos = new Set(previos);
       let malas = 0;
+      const descartar = (signo: string, c: { texto: string; evita: string; compatible: { matiz: string } }, motivo: string) =>
+        descartadas.push({ modelo, signo, texto: c.texto, evita: c.evita, matiz: c.compatible.matiz, motivo });
       const profecias = sorteo.map((s): Profecia => {
         const p = porSigno.get(s.signo);
         const candidata = p && { texto: p.texto.trim(), evita: p.evita.trim(), compatible: { signo: s.compatible, matiz: p.matiz.trim() } };
@@ -102,7 +108,7 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
         if (!candidata || motivo) {
           malas++;
           fallos.push(`${modelo}:${s.signo}:${motivo}`);
-          if (candidata && motivo) descartadas.push({ signo: s.signo, texto: candidata.texto, motivo });
+          if (candidata && motivo) descartar(s.signo, candidata, motivo);
           return profeciaDelBanco(fecha, s);
         }
         for (const sexteto of sextetos(candidata.texto)) vistos.add(sexteto);
@@ -110,6 +116,8 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
       });
       if (malas <= MAX_MALAS) return { profecias, modelo, fallos, descartadas, tokens };
       fallos.push(`${modelo}:demasiadas_invalidas`);
+      // También lo válido de esta respuesta se tira: que se vea, para revisar el prompt
+      for (const p of profecias) if (p.origen === "ia") descartar(p.signo, p, "modelo_descartado");
     } catch (e) {
       fallos.push(`${modelo}:${String(e).slice(0, 80)}`);
     }
