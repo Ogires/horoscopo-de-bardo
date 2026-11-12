@@ -37,6 +37,17 @@ describe("generarDia", () => {
     expect(llamadas[0].cuerpo.reasoning_effort).toBe("medium");
   });
 
+  it("con medium el tope de salida deja sitio al razonamiento sin pasar de 8K por minuto", async () => {
+    const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+    await generarDia(FECHA, deps());
+    await generarDia(FECHA, { ...deps(), esfuerzo: "medium" });
+    const [low, medium] = llamadas.map((l) => l.cuerpo.max_tokens);
+    expect(low).toBe(3500);
+    expect(medium).toBeGreaterThanOrEqual(5000);
+    // Con ~2.500 de entrada el día 3, entrada + tope tiene que caber en los 8K tokens/minuto de Groq
+    expect(2500 + medium).toBeLessThanOrEqual(8000);
+  });
+
   it("hasta 3 signos inválidos salen del banco y se queda el modelo", async () => {
     const largo = { texto: "x".repeat(200) };
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { rust: largo, go: largo })) : null));

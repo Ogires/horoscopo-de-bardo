@@ -25,6 +25,7 @@ export interface DepsGeneracion {
 }
 
 export type Esfuerzo = "low" | "medium";
+const TOPE_SALIDA: Record<Esfuerzo, number> = { low: 3500, medium: 5000 };
 
 export interface DiaGenerado {
   profecias: Profecia[];
@@ -49,8 +50,9 @@ async function pedirAGroq(
         { role: "system", content: SISTEMA },
         { role: "user", content: usuario },
       ],
-      // Entrada ~2.900 + 3.500 de tope: por debajo de los 8K tokens/minuto de Groq
-      max_tokens: 3500,
+      // Entrada ~2.500 + tope: por debajo de los 8K tokens/minuto de Groq. Con medium, el
+      // razonamiento pasó de 3.200 tokens y con 3.500 el JSON llegaba vacío o cortado
+      max_tokens: TOPE_SALIDA[esfuerzo],
       temperature: 0.9,
       reasoning_effort: esfuerzo,
       response_format: { type: "json_schema", json_schema: { name: "horoscopo", strict: true, schema: ESQUEMA } },
