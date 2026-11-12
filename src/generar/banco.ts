@@ -1,5 +1,6 @@
 // src/generar/banco.ts — respaldo escrito a mano: la demo nunca se queda en blanco
 import banco from "../../data/banco.json";
+import matices from "../../data/matices.json";
 import type { Profecia } from "../tipos";
 import { hash32, sortearDia, type SorteoSigno } from "./sorteo";
 
@@ -20,3 +21,7 @@ export function profeciaDelBanco(fecha: string, sorteo: SorteoSigno): Profecia {
 }
 
 export const diaDelBanco = (fecha: string): Profecia[] => sortearDia(fecha).map((s) => profeciaDelBanco(fecha, s));
+
+// Para una profecía buena cuyo único fallo es la longitud del matiz: el modelo no cuenta caracteres
+export const matizDeReserva = (fecha: string, signo: string): string =>
+  matices[hash32(`matiz:${fecha}:${signo}`) % matices.length];

@@ -1,6 +1,6 @@
 // src/generar/cadena.ts — gpt-oss-120b → gpt-oss-20b → banco
 import type { Profecia } from "../tipos";
-import { profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
+import { matizDeReserva, profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
 import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
 import { sortearDia } from "./sorteo";
 import { motivoInvalida, repite, sextetos } from "./validar";
@@ -33,7 +33,10 @@ export interface Descartada {
   texto: string;
   evita: string;
   matiz: string;
-  /** El de la validación, o «modelo_descartado» si era válida pero se tiró la respuesta entera */
+  /**
+   * El de la validación; «matiz_reserva» si solo se tiró el matiz (la profecía se publica con uno
+   * de la lista), o «modelo_descartado» si era válida pero se tiró la respuesta entera
+   */
   motivo: string;
 }
 
@@ -101,15 +104,30 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
         descartadas.push({ modelo, signo, texto: c.texto, evita: c.evita, matiz: c.compatible.matiz, motivo });
       const profecias = sorteo.map((s): Profecia => {
         const p = porSigno.get(s.signo);
-        const candidata = p && { texto: p.texto.trim(), evita: p.evita.trim(), compatible: { signo: s.compatible, matiz: p.matiz.trim() } };
-        const motivo = !candidata
-          ? "falta"
-          : motivoInvalida(candidata, s.signo) ?? (repite(candidata.texto, vistos) ? "repetida" : null);
-        if (!candidata || motivo) {
+        if (!p) {
+          malas++;
+          fallos.push(`${modelo}:${s.signo}:falta`);
+          return profeciaDelBanco(fecha, s);
+        }
+        const propuesta = { texto: p.texto.trim(), evita: p.evita.trim(), compatible: { signo: s.compatible, matiz: p.matiz.trim() } };
+        let candidata = propuesta;
+        let motivo = motivoInvalida(propuesta, s.signo);
+        // El modelo no cuenta caracteres: si lo único que falla es el largo del matiz, se cambia
+        // por uno de la lista y se vuelve a validar lo demás
+        if (motivo === "longitud_matiz") {
+          candidata = { ...propuesta, compatible: { ...propuesta.compatible, matiz: matizDeReserva(fecha, s.signo) } };
+          motivo = motivoInvalida(candidata, s.signo);
+        }
+        motivo ??= repite(candidata.texto, vistos) ? "repetida" : null;
+        if (motivo) {
           malas++;
           fallos.push(`${modelo}:${s.signo}:${motivo}`);
-          if (candidata && motivo) descartar(s.signo, candidata, motivo);
+          descartar(s.signo, propuesta, motivo);
           return profeciaDelBanco(fecha, s);
+        }
+        if (candidata !== propuesta) {
+          fallos.push(`${modelo}:${s.signo}:matiz_reserva`);
+          descartar(s.signo, propuesta, "matiz_reserva");
         }
         for (const sexteto of sextetos(candidata.texto)) vistos.add(sexteto);
         return { signo: s.signo, ...candidata, puerto: s.puerto, origen: "ia" };
