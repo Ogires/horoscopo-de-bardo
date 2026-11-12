@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import banco from "../data/banco.json";
 import { generarDia } from "../src/generar/cadena";
+import { EJEMPLOS } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
 import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch } from "./helpers";
 
@@ -98,6 +99,11 @@ describe("generarDia", () => {
     const copia = `Escuchad, Rust: ${ochoPalabras} y así seguirá hasta el final del día.`;
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { rust: { texto: copia } })) : null));
     repetida(await generarDia(FECHA, deps()), "rust");
+  });
+
+  it("descarta una profecía que copia un ejemplo del prompt", async () => {
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { php: { texto: EJEMPLOS[2].texto } })) : null));
+    repetida(await generarDia(FECHA, deps()), "php");
   });
 
   it("descarta una profecía que copia 6 palabras de otro signo del mismo día", async () => {

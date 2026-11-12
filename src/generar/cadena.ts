@@ -1,7 +1,7 @@
 // src/generar/cadena.ts — gpt-oss-120b → gpt-oss-20b → banco
 import type { Profecia } from "../tipos";
 import { profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
-import { ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
+import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
 import { sortearDia } from "./sorteo";
 import { motivoInvalida, repite, sextetos } from "./validar";
 
@@ -66,8 +66,9 @@ async function pedirAGroq(
 
 export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<DiaGenerado> {
   const sorteo = sortearDia(fecha);
-  // Filtro de copias global: los 14 días de todos los signos y el banco entero, en un solo Set
-  const previos = new Set([...[...deps.historial.values()].flat(), ...TEXTOS_DEL_BANCO].flatMap(sextetos));
+  // Filtro de copias global: los 14 días de todos los signos, el banco entero y los ejemplos del prompt
+  const textos = [...[...deps.historial.values()].flat(), ...TEXTOS_DEL_BANCO, ...EJEMPLOS.map((e) => e.texto)];
+  const previos = new Set(textos.flatMap(sextetos));
   const recientes = new Map([...deps.historial].map(([signo, textos]) => [signo, textos.slice(0, 3)]));
   const usuario = mensajeDelDia(fecha, sorteo, recientes);
   const fallos: string[] = [];
