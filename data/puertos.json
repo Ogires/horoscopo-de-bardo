@@ -1,0 +1,10 @@
+[
+  { "numero": 21, "servicio": "FTP" }, { "numero": 22, "servicio": "SSH" }, { "numero": 23, "servicio": "Telnet" },
+  { "numero": 25, "servicio": "SMTP" }, { "numero": 53, "servicio": "DNS" }, { "numero": 80, "servicio": "HTTP" },
+  { "numero": 443, "servicio": "HTTPS" }, { "numero": 1337, "servicio": "leet" }, { "numero": 3000, "servicio": "servidor de desarrollo" },
+  { "numero": 3306, "servicio": "MySQL" }, { "numero": 4200, "servicio": "Angular" }, { "numero": 5173, "servicio": "Vite" },
+  { "numero": 5432, "servicio": "PostgreSQL" }, { "numero": 6379, "servicio": "Redis" }, { "numero": 6443, "servicio": "API de Kubernetes" },
+  { "numero": 8000, "servicio": "HTTP de desarrollo" }, { "numero": 8080, "servicio": "HTTP alternativo" }, { "numero": 8443, "servicio": "HTTPS alternativo" },
+  { "numero": 9090, "servicio": "Prometheus" }, { "numero": 9200, "servicio": "Elasticsearch" }, { "numero": 11211, "servicio": "Memcached" },
+  { "numero": 27017, "servicio": "MongoDB" }, { "numero": 31337, "servicio": "élite" }
+]
