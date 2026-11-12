@@ -49,6 +49,38 @@ describe("generarDia", () => {
     expect(2500 + medium).toBeLessThanOrEqual(8000);
   });
 
+  describe("parámetros según el modelo", () => {
+    it("gpt-oss no lleva reasoning_format, que Groq no admite en esos modelos", async () => {
+      const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, deps());
+      expect(llamadas[0].cuerpo).not.toHaveProperty("reasoning_format");
+    });
+
+    it("Qwen 3.8: razonamiento con el esfuerzo pedido, aparte del JSON (parsed), strict y tope de salida mayor", async () => {
+      const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), modelos: ["qwen/qwen3.8-27b"] });
+      expect(g.modelo).toBe("qwen/qwen3.8-27b");
+      const c = llamadas[0].cuerpo;
+      expect(c.model).toBe("qwen/qwen3.8-27b");
+      expect(c.reasoning_effort).toBe("low");
+      // Con json_schema, raw da 400: el razonamiento iría dentro del contenido
+      expect(c.reasoning_format).toBe("parsed");
+      expect(c.response_format.json_schema.strict).toBe(true);
+      expect(c.max_tokens).toBe(5000);
+      expect(2600 + c.max_tokens).toBeLessThanOrEqual(8000);
+    });
+
+    it("un modelo sin strict en la documentación de Groq va en best-effort y sin parámetros de razonamiento", async () => {
+      const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, { ...deps(), modelos: ["otro/modelo-sin-strict"] });
+      const c = llamadas[0].cuerpo;
+      expect(c.response_format.type).toBe("json_schema");
+      expect(c.response_format.json_schema.strict).toBe(false);
+      expect(c).not.toHaveProperty("reasoning_effort");
+      expect(c).not.toHaveProperty("reasoning_format");
+    });
+  });
+
   it("hasta 3 signos inválidos salen del banco y se queda el modelo", async () => {
     const largo = { texto: "x".repeat(200) };
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { rust: largo, go: largo })) : null));

@@ -49,12 +49,33 @@ export interface DiaGenerado {
   tokens: number;
 }
 
+interface OpcionesModelo {
+  strict: boolean;
+  tope: number;
+  razonamiento: Record<string, string>;
+}
+
+// Lo que admite cada modelo según la documentación de Groq (reasoning y structured outputs):
+// strict, solo gpt-oss y Qwen 3.8; reasoning_format no existe en gpt-oss, y en Qwen, con
+// json_schema, no puede ser raw (el razonamiento iría dentro del contenido): parsed lo saca aparte
+function opcionesDelModelo(modelo: string, esfuerzo: Esfuerzo): OpcionesModelo {
+  if (modelo.startsWith("openai/gpt-oss-")) {
+    return { strict: true, tope: TOPE_SALIDA[esfuerzo], razonamiento: { reasoning_effort: esfuerzo } };
+  }
+  if (modelo === "qwen/qwen3.8-27b") {
+    // No se sabe cuánto razona con low: el tope de medium, que con ~2.600 de entrada cabe en 8K/min
+    return { strict: true, tope: TOPE_SALIDA.medium, razonamiento: { reasoning_effort: esfuerzo, reasoning_format: "parsed" } };
+  }
+  return { strict: false, tope: TOPE_SALIDA[esfuerzo], razonamiento: {} };
+}
+
 async function pedirAGroq(
   apiKey: string,
   modelo: string,
   usuario: string,
   esfuerzo: Esfuerzo,
 ): Promise<{ profecias: RespuestaIa[]; tokens: number }> {
+  const o = opcionesDelModelo(modelo, esfuerzo);
   const r = await fetch(GROQ_URL, {
     method: "POST",
     signal: AbortSignal.timeout(60_000),
@@ -65,12 +86,12 @@ async function pedirAGroq(
         { role: "system", content: SISTEMA },
         { role: "user", content: usuario },
       ],
-      // Entrada ~2.500 + tope: por debajo de los 8K tokens/minuto de Groq. Con medium, el
+      // Entrada ~2.600 + tope: por debajo de los 8K tokens/minuto de Groq. Con medium, el
       // razonamiento pasó de 3.200 tokens y con 3.500 el JSON llegaba vacío o cortado
-      max_tokens: TOPE_SALIDA[esfuerzo],
+      max_tokens: o.tope,
       temperature: 0.9,
-      reasoning_effort: esfuerzo,
-      response_format: { type: "json_schema", json_schema: { name: "horoscopo", strict: true, schema: ESQUEMA } },
+      ...o.razonamiento,
+      response_format: { type: "json_schema", json_schema: { name: "horoscopo", strict: o.strict, schema: ESQUEMA } },
     }),
   });
   if (!r.ok) throw new Error(`groq_${r.status}`);
