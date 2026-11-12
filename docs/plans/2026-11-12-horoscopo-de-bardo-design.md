@@ -81,7 +81,7 @@ src/
     prompt.ts          prompt del sistema y del día
     cadena.ts          gpt-oss-120b → gpt-oss-20b → banco
     validar.ts         longitudes, palabras vetadas, repeticiones
-    sorteo.ts          tema, puerto y compatible deterministas por fecha
+    sorteo.ts          gancho, puerto y compatible deterministas por fecha
     banco.ts           elección determinista del banco
   telegram.ts          publicación en el canal y avisos al administrador
   web/                 plantillas HTML (SSR)
@@ -89,7 +89,7 @@ src/
   tarjeta.ts           SVG
 data/
   banco.json           profecías escritas a mano (7 por signo)
-  temas.json           temas del día (unos 60)
+  ganchos.json         hechos ciertos de cada lenguaje (15 por signo)
   puertos.json         puertos con su servicio (8080, 5432, 6379…)
 public/                CSS, fuentes, og.png, openapi.json, favicon
 migrations/0001_inicial.sql
@@ -132,7 +132,7 @@ Cada profecía:
 
 Para que la IA tenga menos que inventar (y menos que validar), el código sortea antes de llamarla, de forma determinista a partir de la fecha:
 
-- **El tema del día de cada signo:** doce temas distintos sacados de `data/temas.json` (60: el deploy del viernes, la revisión de código, las dependencias, la documentación, las estimaciones, el código heredado, los tests que fallan a veces, la guardia de madrugada…). Rotan en **ciclos de cinco días**: cada ciclo baraja los 60 temas con su propia semilla y cada día toma doce seguidos, así que en un ciclo ningún tema sale dos veces, tampoco en otro signo. Sirve para que no se repitan.
+- **El gancho del día de cada signo:** un hecho cierto y comprobable de su lenguaje, sacado de `data/ganchos.json`, que tiene 15 por signo: un comportamiento, un error con su mensaje, una herramienta oficial o una manía («unwrap() sobre un None hace entrar en pánico al programa», «NULL = NULL no es verdadero: hay que usar IS NULL»). Solo el lenguaje y su ecosistema oficial (compilador, gestor de paquetes, biblioteca estándar), nada que dependa de una versión concreta y nada de proyectos de terceros, personas ni empresas. Cada signo rota los suyos en **ciclos de quince días**: cada ciclo baraja la lista del signo con su propia semilla y toma uno por día, así que en un ciclo ningún gancho sale dos veces. Con un tema genérico («la reunión», «el certificado caducado»), el modelo escribía partes de incidencias y se inventaba hechos técnicos; con el gancho, el código pone el hecho y la IA solo la voz.
 - **El puerto de la suerte**, de `data/puertos.json`, con su servicio: «5432 (PostgreSQL)».
 - **El signo compatible**, otro de los doce.
 
@@ -142,19 +142,19 @@ La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»**.
 
 - **Una sola llamada al día** con los doce signos. Modelo `openai/gpt-oss-120b` en Groq, con `reasoning_effort: low`. Si falla, `openai/gpt-oss-20b`. Los ids de los modelos van en `vars`, porque los modelos de Groq caducan.
 - **Salida con `response_format` de tipo `json_schema` y `strict: true`**, que Groq admite en los dos modelos: la respuesta siempre cumple el esquema. Sin streaming, que no es compatible con este modo.
-- **Contexto para no repetirse:** para cada signo, el tema y el compatible sorteados y los textos de los **tres días anteriores**, con la instrucción de no repetir ni la idea ni el giro.
+- **Contexto para no repetirse:** para cada signo, el gancho y el compatible sorteados y los textos de los **tres días anteriores** que escribió la IA, con la instrucción de no repetir ni la idea ni el giro. Lo que salió del banco no vuelve al prompt (el modelo lo parafrasea), aunque sí está en el filtro de copias.
 - **Coste estimado:** unos 2.900 tokens de entrada y 1.600 de salida: unos 4.500 por llamada.
 
 ### 5.3 El prompt del sistema (resumen)
 
-- **Voz:** un bardo pesimista que canta desgracias inevitables. Habla a quienes programan en cada lenguaje en segunda persona del plural («os», «vuestro», «tendréis»), nunca de tú, con algún giro de juglar suelto («os lo advierto», «escuchad», «cantan los astros») y frases que se entienden a la primera. Español de España correcto, sin anglicismos innecesarios.
-- **El chiste sale del lenguaje y de su ecosistema:** el compilador, los errores con nombre propio, el gestor de paquetes, las herramientas y sus manías. El tema del día es solo un pretexto que se lleva a ese terreno: si el texto valdría igual para otro lenguaje, no vale.
-- **Lo técnico tiene que ser cierto:** si el modelo no está seguro de que un error o un comportamiento existe, usa otro.
-- **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta con gracia cómo o por qué se llevan los dos lenguajes («que también sabe hacer die()», «solo los viernes»), y es distinto en cada signo.
-- **Nunca:** personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, frontend, QA…); política, religión, salud, dinero real ni despidos; palabrotas; enlaces; emojis (los pone el código).
-- **Variedad:** como mucho dos profecías del día empiezan por la misma palabra, también si es «El» o «La», y ninguna abre repitiendo el enunciado del tema.
-- **Ejemplos de tono:** el prompt lleva tres ejemplos completos (tema, texto, «Evita», compatible y matiz) que no están en el banco, en los que un tema genérico, uno de ellos de oficina, se lleva al terreno de un lenguaje concreto. Son solo para el tono: el prompt pide que no se repitan, y el filtro de copias los vigila (sección 5.4).
-- **Longitudes:** texto de 80 a 180 caracteres; «Evita» y el matiz, de 60 y 40 como mucho. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
+- **Voz:** un bardo pesimista que canta desgracias pequeñas e inevitables y las remata con ironía o resignación: se lee como una profecía, no como un parte de incidencias. Habla a quienes programan en cada lenguaje en segunda persona del plural («os», «vuestro», «tendréis»), nunca de tú, con frases que se entienden a la primera. Español de España correcto, sin anglicismos innecesarios («probar» y no «testear»; nada de «bindear», «payload» ni «legacy»), salvo los nombres técnicos del propio lenguaje.
+- **La profecía se construye alrededor del gancho, que es cierto:** el modelo no añade otros hechos técnicos que no estén en el gancho, salvo que sean de conocimiento general en ese lenguaje y esté seguro de que son ciertos. Es lo que hace el banco: un rasgo real del lenguaje contado como desgracia inevitable.
+- **Forma del texto:** dos frases, la desgracia y un **remate** (un giro irónico, la resignación del bardo o una consecuencia absurda).
+- **Arranques:** la mayoría empiezan por el sujeto o por el verbo («Vuestro…», «Pondréis…», «Bastará un…»). Las fórmulas de juglar («os lo advierto», «escuchad», «cantan los astros») van en medio o al final, y como mucho en tres profecías del día. Como mucho dos profecías del día empiezan por la misma palabra, también si es «El» o «La».
+- **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta, con gracia y sin faltar a la verdad, cómo o por qué se llevan los dos lenguajes, y varía de forma: «a regañadientes», «solo los viernes», «por miedo», «para discutir de tipos», «que también sabe hacer die()». Como mucho tres matices del día empiezan por «que también».
+- **Nunca:** personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, frontend, QA…); política, religión, salud, dinero real ni despidos; palabrotas; enlaces; emojis (los pone el código); el carácter `@`, tampoco en anotaciones o decoradores.
+- **Ejemplos de tono:** el prompt lleva cuatro ejemplos completos (gancho, texto, «Evita», compatible y matiz) con la longitud pedida, su remate y arranques distintos, ninguno con una fórmula de juglar al principio. Sus ganchos no están en `data/ganchos.json` y sus textos no están en el banco. Son solo para el tono: el prompt pide que no se repitan, y el filtro de copias los vigila (sección 5.4).
+- **Longitudes:** el prompt pide un texto de 100 a 150 caracteres; «Evita» y el matiz, de 60 y 40 como mucho. El validador acepta textos de 80 a 180, para no tirar una buena profecía por unos caracteres. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
 
 ### 5.4 Validación
 
@@ -274,7 +274,7 @@ Según OWASP Top 10 2025 y OWASP LLM Top 10 2025:
 **TDD con Vitest + `@cloudflare/vitest-plugin`**, con D1 de pruebas por migraciones:
 
 - **Fechas:** día de Madrid y fecha objetivo en las cuatro horas del cron, en invierno, en verano y en los cambios de hora de marzo y octubre. Ninguna ruta sirve una fecha posterior a hoy.
-- **Sorteo y banco:** deterministas por fecha; doce temas distintos, y sesenta sin repetir en cada ciclo de cinco días; el compatible nunca es el propio signo.
+- **Sorteo y banco:** deterministas por fecha; cada signo recibe un gancho suyo, y sus quince sin repetir en cada ciclo de quince días; el compatible nunca es el propio signo. Contenido de `data/ganchos.json`: 15 por signo, distintos, de 90 caracteres como mucho, sin `@` ni enlaces.
 - **Validación:** signo que falta o se repite, longitudes, palabras vetadas, URLs, «Evita» que empieza por «no» y repeticiones de 6 palabras con otros signos, el banco y el propio día.
 - **Cadena:** 120b → 20b → banco, con `fetch` parcheado.
 - **Cron:** idempotencia de las cuatro horas, sin duplicar el día ni el mensaje; reserva de Telegram con fallo antes y después de enviar; avisos al administrador.
