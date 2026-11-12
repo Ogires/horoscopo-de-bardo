@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import { setTimeout as esperar } from "node:timers/promises";
 import { generarDia, type Esfuerzo } from "../../src/generar/cadena";
 import { sumarDias } from "../../src/fecha";
+import { sortearDia } from "../../src/generar/sorteo";
 import { SIGNO_POR_SLUG } from "../../src/signos";
+
+const nombre = (slug: string) => SIGNO_POR_SLUG.get(slug)!.nombre;
 
 const ruta = process.env.ARCHIVO_VARS ?? "../interview-fight-club/.dev.vars";
 const linea = readFileSync(ruta, "utf8").split(/\r?\n/).find((l) => l.startsWith("GROQ_API_KEY="));
@@ -49,9 +52,17 @@ for (let i = 0; i < 3; i++) {
   const t0 = Date.now();
   const g = await generarDia(fecha, { apiKey, modelos: ["openai/gpt-oss-120b"], historial, esfuerzo });
   console.log(`\n=== ${fecha} · ${g.modelo ?? "BANCO"} · ${g.tokens} tokens · ${Date.now() - t0} ms · fallos: ${g.fallos.join(", ") || "ninguno"}`);
+  const ganchos = new Map(sortearDia(fecha).map((s) => [s.signo, s.gancho]));
   for (const p of g.profecias) {
-    console.log(`${SIGNO_POR_SLUG.get(p.signo)!.nombre} [${p.origen}] (${[...p.texto].length}) ${p.texto}`);
+    console.log(`${nombre(p.signo)} [${p.origen}] (${[...p.texto].length}) ${p.texto}`);
+    console.log(`   Gancho: ${ganchos.get(p.signo)}`);
     console.log(`   Evita: ${p.evita} · Compatible: ${p.compatible.signo}, ${p.compatible.matiz}`);
-    historial.set(p.signo, [p.texto, ...(historial.get(p.signo) ?? [])]);
+    // Al prompt solo vuelve lo que escribió la IA: el banco ya está entero en el filtro de copias
+    // y, si se le enseña al modelo, lo parafrasea al día siguiente
+    if (p.origen === "ia") historial.set(p.signo, [p.texto, ...(historial.get(p.signo) ?? [])]);
+  }
+  if (g.descartadas.length) {
+    console.log("--- Descartadas");
+    for (const d of g.descartadas) console.log(`${nombre(d.signo)} · ${d.motivo} (${[...d.texto].length}) ${d.texto}`);
   }
 }
