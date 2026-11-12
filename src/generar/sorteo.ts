@@ -42,9 +42,23 @@ function barajar<T>(lista: readonly T[], azar: () => number): T[] {
   return copia;
 }
 
+const DIA_MS = 86_400_000;
+const DIAS_POR_CICLO = 5;
+
+// Los temas rotan en ciclos de 5 días: una permutación de los 60 por ciclo y doce por día,
+// así que dentro de un ciclo ningún tema sale dos veces (aunque sea en otro signo)
+function temasDeLaFecha(fecha: string): string[] {
+  const [a, m, d] = fecha.split("-").map(Number);
+  const n = Math.round(Date.UTC(a, m - 1, d) / DIA_MS);
+  const ciclo = Math.floor(n / DIAS_POR_CICLO);
+  const pos = n - ciclo * DIAS_POR_CICLO;
+  const orden = barajar(temas, generador(hash32(`temas:${ciclo}`)));
+  return SIGNOS.map((_, i) => orden[(pos * SIGNOS.length + i) % orden.length]);
+}
+
 export function sortearDia(fecha: string): SorteoSigno[] {
   const azar = generador(hash32(`sorteo:${fecha}`));
-  const temasDelDia = barajar(temas, azar).slice(0, SIGNOS.length);
+  const temasDelDia = temasDeLaFecha(fecha);
   return SIGNOS.map((s, i) => {
     const otros = SIGNOS.filter((o) => o.slug !== s.slug);
     return {

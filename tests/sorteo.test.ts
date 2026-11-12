@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import puertos from "../data/puertos.json";
 import temas from "../data/temas.json";
+import { sumarDias } from "../src/fecha";
 import { hash32, sortearDia } from "../src/generar/sorteo";
 import { SLUGS } from "../src/signos";
 
@@ -42,6 +43,27 @@ describe("sortearDia", () => {
         expect(puertos).toContainEqual(x.puerto);
       }
     }
+  });
+
+  // El 2026-11-13 es el día 20.770 desde 1970-01-01, múltiplo de 5: abre un ciclo de temas
+  const ciclo = (inicio: string) => [0, 1, 2, 3, 4].map((i) => sortearDia(sumarDias(inicio, i)).map((x) => x.tema));
+
+  it("los cinco días de un ciclo usan los 60 temas sin repetir ninguno", () => {
+    for (const k of [0, 1, 37]) {
+      const dias = ciclo(sumarDias("2026-11-13", 5 * k));
+      expect(new Set(dias.flat()).size).toBe(60);
+    }
+  });
+
+  it("dos días seguidos del mismo ciclo no comparten tema", () => {
+    const dias = ciclo("2026-11-13");
+    for (let i = 0; i < 4; i++) {
+      expect(dias[i].filter((t) => dias[i + 1].includes(t))).toEqual([]);
+    }
+  });
+
+  it("los temas de un ciclo cambian de orden en el siguiente", () => {
+    expect(ciclo("2026-11-13")).not.toEqual(ciclo("2026-11-18"));
   });
 
   it("hash32 es estable", () => {
