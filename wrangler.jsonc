@@ -1,0 +1,25 @@
+{
+  "name": "horoscopo-de-bardo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // run_worker_first: el Worker pone las cabeceras de seguridad también a los estáticos
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true, "not_found_handling": "404-page" },
+  "routes": [{ "pattern": "bardo.webninja.fyi", "custom_domain": true }],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  // 21 y 22 UTC: generar el día siguiente y reintentar · 7 y 8 UTC: publicar en Telegram y reintentar
+  "triggers": { "crons": ["0 21,22,7,8 * * *"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "horoscopo-de-bardo", "database_id": "0a1f6457-def7-4247-adb3-158159d9a76d", "migrations_dir": "migrations" }
+  ],
+  // Laxo (lección 9), pero basta: ninguna petición gasta IA
+  "ratelimits": [{ "name": "RL", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }],
+  "vars": {
+    "MODELO": "openai/gpt-oss-120b",
+    "MODELO_RESPALDO": "openai/gpt-oss-20b",
+    "TELEGRAM_CANAL": "@pendiente",
+    "FECHA_LANZAMIENTO": "2026-12-01",
+    "URL_PUBLICA": "https://bardo.webninja.fyi"
+  }
+  // Secrets: GROQ_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_AVISOS (chat privado del administrador)
+}

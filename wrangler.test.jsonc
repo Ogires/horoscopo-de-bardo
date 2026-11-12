@@ -1,0 +1,19 @@
+// Config SOLO para Vitest: sin dominio ni cron, secretos de mentira
+{
+  "name": "horoscopo-de-bardo-test",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true, "not_found_handling": "404-page" },
+  "d1_databases": [{ "binding": "DB", "database_name": "horoscopo-de-bardo", "database_id": "test" }],
+  "ratelimits": [{ "name": "RL", "namespace_id": "1003", "simple": { "limit": 1000, "period": 60 } }],
+  "vars": {
+    "MODELO": "openai/gpt-oss-120b",
+    "MODELO_RESPALDO": "openai/gpt-oss-20b",
+    "TELEGRAM_CANAL": "@canal_de_prueba",
+    "FECHA_LANZAMIENTO": "2026-01-01",
+    "URL_PUBLICA": "https://bardo.webninja.fyi",
+    "GROQ_API_KEY": "clave-de-prueba",
+    "TELEGRAM_BOT_TOKEN": "token-de-prueba",
+    "TELEGRAM_AVISOS": "42"
+  }
+}
