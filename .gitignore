@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
+coverage/
+dist/
+
+# Notas de trabajo: no se publican
+propuestas/
+docs/plans/*-plan.md
+docs/plans/*-mv1.md
