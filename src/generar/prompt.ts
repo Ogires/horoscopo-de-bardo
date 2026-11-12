@@ -4,7 +4,7 @@ import type { SorteoSigno } from "./sorteo";
 
 export interface Ejemplo {
   signo: string;
-  tema: string;
+  gancho: string;
   texto: string;
   evita: string;
   compatible: string;
@@ -15,7 +15,7 @@ export interface Ejemplo {
 export const EJEMPLOS: readonly Ejemplo[] = [
   {
     signo: "go",
-    tema: "la reunión que pudo ser un correo",
+    gancho: "la reunión que pudo ser un correo",
     texto: "Os lo advierto: pasaréis una hora reunidos para bautizar un paquete. Saldréis con util, justo el nombre que la guía de Go os pedía evitar, y ahí se quedará.",
     evita: "crear un paquete common «para lo que sobre»",
     compatible: "csharp",
@@ -23,7 +23,7 @@ export const EJEMPLOS: readonly Ejemplo[] = [
   },
   {
     signo: "javascript",
-    tema: "el 29 de febrero",
+    gancho: "el 29 de febrero",
     texto: "Escuchad: new Date(2026, 1, 29) os dará el 1 de marzo, tan tranquilo. Aquí los meses empiezan en cero y las fechas imposibles se convierten en otras sin avisar.",
     evita: "contar los meses desde el uno",
     compatible: "java",
@@ -31,7 +31,7 @@ export const EJEMPLOS: readonly Ejemplo[] = [
   },
   {
     signo: "php",
-    tema: "la actualización de versión mayor",
+    gancho: "la actualización de versión mayor",
     texto: "Subiréis por fin a PHP 8 y 'abc' == 0 dejará de ser cierto. Era una locura, sí, pero media aplicación llevaba años apoyada en ella.",
     evita: "esconder los avisos con error_reporting(0)",
     compatible: "python",
@@ -43,7 +43,7 @@ const nombre = (slug: string) => SIGNO_POR_SLUG.get(slug)!.nombre;
 
 const ejemplos = EJEMPLOS.map((e) =>
   [
-    `- ${nombre(e.signo)}, con el tema «${e.tema}»:`,
+    `- ${nombre(e.signo)}, con el gancho «${e.gancho}»:`,
     `  texto: "${e.texto}"`,
     `  evita: "${e.evita}" · compatible: ${nombre(e.compatible)}, "${e.matiz}"`,
   ].join("\n"),
@@ -85,7 +85,7 @@ export function mensajeDelDia(fecha: string, sorteo: SorteoSigno[], historial: M
     const previos = historial.get(s.signo) ?? [];
     return [
       `## ${nombre(s.signo)} (signo: ${s.signo})`,
-      `Tema del día: ${s.tema}`,
+      `Gancho del día: ${s.gancho}`,
       `Compatible con: ${nombre(s.compatible)}`,
       previos.length ? `Días anteriores:\n${previos.map((t) => `- ${t}`).join("\n")}` : "Días anteriores: ninguno",
     ].join("\n");

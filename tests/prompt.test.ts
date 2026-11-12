@@ -1,6 +1,6 @@
 // tests/prompt.test.ts
 import { describe, expect, it } from "vitest";
-import temas from "../data/temas.json";
+import ganchos from "../data/ganchos.json";
 import { TEXTOS_DEL_BANCO } from "../src/generar/banco";
 import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
@@ -27,20 +27,21 @@ describe("prompt", () => {
     expect(EJEMPLOS).toHaveLength(3);
     expect(new Set(EJEMPLOS.map((e) => e.signo)).size).toBe(3);
     for (const e of EJEMPLOS) {
-      expect(temas).toContain(e.tema);
-      for (const parte of [e.tema, e.texto, e.evita, e.matiz]) expect(SISTEMA).toContain(parte);
+      // Fuera del sorteo: el día de ese gancho, el modelo no tiene un texto que imitar
+      expect(Object.values(ganchos).flat()).not.toContain(e.gancho);
+      for (const parte of [e.gancho, e.texto, e.evita, e.matiz]) expect(SISTEMA).toContain(parte);
       expect(motivoInvalida({ texto: e.texto, evita: e.evita, compatible: { signo: e.compatible, matiz: e.matiz } }, e.signo)).toBeNull();
       expect(repite(e.texto, banco), e.texto).toBe(false);
     }
   });
 
-  it("el mensaje lleva los doce signos con su tema, su compatible y los días anteriores", () => {
+  it("el mensaje lleva los doce signos con su gancho, su compatible y los días anteriores", () => {
     const sorteo = sortearDia("2026-11-13");
     const historial = new Map([["rust", ["texto de ayer", "texto de anteayer", "texto de hace tres días"]]]);
     const m = mensajeDelDia("2026-11-13", sorteo, historial);
     for (const s of sorteo) {
       expect(m).toContain(`(signo: ${s.signo})`);
-      expect(m).toContain(`Tema del día: ${s.tema}`);
+      expect(m).toContain(`Gancho del día: ${s.gancho}`);
     }
     expect(m).toContain("- texto de hace tres días");
     expect(m).toContain("Días anteriores: ninguno");

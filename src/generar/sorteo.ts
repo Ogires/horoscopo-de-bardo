@@ -1,12 +1,13 @@
 // src/generar/sorteo.ts — lo que decide el código antes de llamar a la IA, determinista por fecha
+import ganchos from "../../data/ganchos.json";
 import puertos from "../../data/puertos.json";
-import temas from "../../data/temas.json";
 import { SIGNOS } from "../signos";
 import type { Puerto } from "../tipos";
 
 export interface SorteoSigno {
   signo: string;
-  tema: string;
+  /** Hecho cierto del lenguaje alrededor del que se escribe la profecía */
+  gancho: string;
   puerto: Puerto;
   compatible: string;
 }
@@ -43,27 +44,26 @@ function barajar<T>(lista: readonly T[], azar: () => number): T[] {
 }
 
 const DIA_MS = 86_400_000;
-const DIAS_POR_CICLO = 5;
+const GANCHOS = ganchos as Record<string, string[]>;
 
-// Los temas rotan en ciclos de 5 días: una permutación de los 60 por ciclo y doce por día,
-// así que dentro de un ciclo ningún tema sale dos veces (aunque sea en otro signo)
-function temasDeLaFecha(fecha: string): string[] {
+// Cada signo rota sus ganchos en ciclos tan largos como su lista: una permutación por
+// ciclo y signo, así que dentro de un ciclo ningún gancho del signo sale dos veces
+function ganchoDelDia(signo: string, fecha: string): string {
   const [a, m, d] = fecha.split("-").map(Number);
   const n = Math.round(Date.UTC(a, m - 1, d) / DIA_MS);
-  const ciclo = Math.floor(n / DIAS_POR_CICLO);
-  const pos = n - ciclo * DIAS_POR_CICLO;
-  const orden = barajar(temas, generador(hash32(`temas:${ciclo}`)));
-  return SIGNOS.map((_, i) => orden[(pos * SIGNOS.length + i) % orden.length]);
+  const lista = GANCHOS[signo];
+  const ciclo = Math.floor(n / lista.length);
+  const orden = barajar(lista, generador(hash32(`ganchos:${signo}:${ciclo}`)));
+  return orden[n - ciclo * lista.length];
 }
 
 export function sortearDia(fecha: string): SorteoSigno[] {
   const azar = generador(hash32(`sorteo:${fecha}`));
-  const temasDelDia = temasDeLaFecha(fecha);
-  return SIGNOS.map((s, i) => {
+  return SIGNOS.map((s) => {
     const otros = SIGNOS.filter((o) => o.slug !== s.slug);
     return {
       signo: s.slug,
-      tema: temasDelDia[i],
+      gancho: ganchoDelDia(s.slug, fecha),
       puerto: puertos[Math.floor(azar() * puertos.length)],
       compatible: otros[Math.floor(azar() * otros.length)].slug,
     };

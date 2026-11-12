@@ -1,18 +1,31 @@
 // tests/sorteo.test.ts
 import { describe, expect, it } from "vitest";
+import ganchos from "../data/ganchos.json";
 import puertos from "../data/puertos.json";
-import temas from "../data/temas.json";
 import { sumarDias } from "../src/fecha";
 import { hash32, sortearDia } from "../src/generar/sorteo";
 import { SLUGS } from "../src/signos";
 
+const GANCHOS = ganchos as Record<string, string[]>;
+const DIA_MS = 86_400_000;
+const diaNumero = (fecha: string) => {
+  const [a, m, d] = fecha.split("-").map(Number);
+  return Math.round(Date.UTC(a, m - 1, d) / DIA_MS);
+};
+
 describe("datos del sorteo", () => {
-  it("al menos 36 temas, únicos y cortos", () => {
-    expect(temas.length).toBeGreaterThanOrEqual(36);
-    expect(new Set(temas).size).toBe(temas.length);
-    for (const t of temas) {
-      expect(t.length).toBeGreaterThan(3);
-      expect(t.length).toBeLessThanOrEqual(80);
+  it("15 ganchos por signo, distintos, de 90 caracteres como mucho, sin @ ni enlaces", () => {
+    expect(Object.keys(GANCHOS).sort()).toEqual([...SLUGS].sort());
+    const todos = Object.values(GANCHOS).flat();
+    expect(new Set(todos).size).toBe(todos.length);
+    for (const [signo, lista] of Object.entries(GANCHOS)) {
+      expect(lista, signo).toHaveLength(15);
+      for (const g of lista) {
+        expect(g.trim().length, g).toBeGreaterThan(10);
+        expect(g, g).toBe(g.trim());
+        expect([...g].length, g).toBeLessThanOrEqual(90);
+        expect(g, g).not.toMatch(/@|https?:\/\/|www\.|\.(?:com|es|io|dev|org|net)\b/i);
+      }
     }
   });
 
@@ -32,12 +45,12 @@ describe("sortearDia", () => {
     expect(sortearDia("2026-11-13")).not.toEqual(sortearDia("2026-11-14"));
   });
 
-  it("da doce temas distintos y un compatible que nunca es el propio signo", () => {
+  it("cada signo recibe un gancho suyo y un compatible que nunca es el propio signo", () => {
     for (const fecha of ["2026-11-13", "2026-12-25", "2027-02-28"]) {
       const s = sortearDia(fecha);
       expect(s.map((x) => x.signo)).toEqual([...SLUGS]);
-      expect(new Set(s.map((x) => x.tema)).size).toBe(12);
       for (const x of s) {
+        expect(GANCHOS[x.signo]).toContain(x.gancho);
         expect(SLUGS.has(x.compatible)).toBe(true);
         expect(x.compatible).not.toBe(x.signo);
         expect(puertos).toContainEqual(x.puerto);
@@ -45,25 +58,25 @@ describe("sortearDia", () => {
     }
   });
 
-  // El 2026-11-13 es el día 20.770 desde 1970-01-01, múltiplo de 5: abre un ciclo de temas
-  const ciclo = (inicio: string) => [0, 1, 2, 3, 4].map((i) => sortearDia(sumarDias(inicio, i)).map((x) => x.tema));
+  // Los ganchos de cada signo rotan en ciclos de 15 días, contados desde 1970-01-01
+  const inicioDeCiclo = (fecha: string) => sumarDias(fecha, -(diaNumero(fecha) % 15));
+  const ciclo = (inicio: string) => Array.from({ length: 15 }, (_, i) => sortearDia(sumarDias(inicio, i)));
 
-  it("los cinco días de un ciclo usan los 60 temas sin repetir ninguno", () => {
+  it("quince días seguidos del mismo ciclo dan quince ganchos distintos en cada signo", () => {
+    const primero = inicioDeCiclo("2026-11-13");
     for (const k of [0, 1, 37]) {
-      const dias = ciclo(sumarDias("2026-11-13", 5 * k));
-      expect(new Set(dias.flat()).size).toBe(60);
+      const dias = ciclo(sumarDias(primero, 15 * k));
+      for (const signo of SLUGS) {
+        const delSigno = dias.map((d) => d.find((x) => x.signo === signo)!.gancho);
+        expect(new Set(delSigno).size, signo).toBe(15);
+      }
     }
   });
 
-  it("dos días seguidos del mismo ciclo no comparten tema", () => {
-    const dias = ciclo("2026-11-13");
-    for (let i = 0; i < 4; i++) {
-      expect(dias[i].filter((t) => dias[i + 1].includes(t))).toEqual([]);
-    }
-  });
-
-  it("los temas de un ciclo cambian de orden en el siguiente", () => {
-    expect(ciclo("2026-11-13")).not.toEqual(ciclo("2026-11-18"));
+  it("el orden de los ganchos cambia de un ciclo al siguiente", () => {
+    const primero = inicioDeCiclo("2026-11-13");
+    const orden = (inicio: string) => ciclo(inicio).map((d) => d.map((x) => x.gancho));
+    expect(orden(primero)).not.toEqual(orden(sumarDias(primero, 15)));
   });
 
   it("hash32 es estable", () => {
