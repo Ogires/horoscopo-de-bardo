@@ -1,0 +1,446 @@
+{
+  "rust": [
+    {
+      "texto": "Hoy el compilador os hablará con crueldad, y tendrá razón. Un lifetime que creíais domado volverá a por vos antes de la comida.",
+      "evita": "hacer clone() para callarlo",
+      "compatible": { "signo": "go", "matiz": "a regañadientes" }
+    },
+    {
+      "texto": "Un unwrap() que dejasteis «solo para probar» despertará en producción y entrará en pánico delante de todos. Nadie recordará que era temporal.",
+      "evita": "jurar que ese unwrap() es provisional",
+      "compatible": { "signo": "php", "matiz": "que también sabe hacer die()" }
+    },
+    {
+      "texto": "Los astros auguran una compilación larga: os dará tiempo a hacer café, a tomarlo y a replantearos la vida antes del primer error.",
+      "evita": "hacer cargo clean «por si acaso»",
+      "compatible": { "signo": "cobol", "matiz": "que también sabe esperar" }
+    },
+    {
+      "texto": "Pondréis un Rc<RefCell<T>> para salir del paso. Mañana serán tres, y vuestro diseño quedará preso de ellos para siempre.",
+      "evita": "envolverlo todo en Arc<Mutex<T>>",
+      "compatible": { "signo": "java", "matiz": "que también lo envuelve todo en capas" }
+    },
+    {
+      "texto": "Desde el fondo del módulo os observa un bloque unsafe. Jurasteis que era seguro, y esas promesas, os lo advierto, se pagan en segfaults.",
+      "evita": "dejar en blanco el comentario SAFETY",
+      "compatible": { "signo": "haskell", "matiz": "que esconde su propio unsafe" }
+    },
+    {
+      "texto": "Vuestra función no sabrá si quiere un String o un &str, y vosotros tampoco. Acabaréis repartiendo .to_string() como quien reparte vendas.",
+      "evita": "aceptar String donde bastaba &str",
+      "compatible": { "signo": "typescript", "matiz": "que también se pelea con sus strings" }
+    },
+    {
+      "texto": "Bastará un solo async en el sitio equivocado para contagiar a todas vuestras funciones, una tras otra, como fichas de dominó.",
+      "evita": "mezclar dos runtimes en el mismo proyecto",
+      "compatible": { "signo": "csharp", "matiz": "que sufrió ese contagio primero" }
+    }
+  ],
+  "javascript": [
+    {
+      "texto": "Hoy undefined no será una función, aunque lo llaméis con todo vuestro cariño. La consola os lo dirá en rojo, y no será la última vez.",
+      "evita": "llamar a algo sin mirar si existe",
+      "compatible": { "signo": "typescript", "matiz": "que os lo advirtió antes de ejecutar" }
+    },
+    {
+      "texto": "La carpeta node_modules crecerá esta noche hasta pesar más que vuestro proyecto, vuestro portátil y vuestras esperanzas juntos.",
+      "evita": "instalar un paquete para saber si un número es par",
+      "compatible": { "signo": "cobol", "matiz": "que no sabe qué es un paquete" }
+    },
+    {
+      "texto": "Os lo advierto: [10, 9, 1].sort() os devolverá 1, 10, 9, y lo hará muy convencido. Aquí los números se ordenan como palabras.",
+      "evita": "ordenar números sin pasarle una función",
+      "compatible": { "signo": "python", "matiz": "que ordena como es debido" }
+    },
+    {
+      "texto": "Un this cambiará de dueño en mitad de un callback y no sabréis a quién pertenece. Él tampoco lo sabe, pero actuará con aplomo.",
+      "evita": "escribir function donde iba una flecha",
+      "compatible": { "signo": "java", "matiz": "donde this siempre es this" }
+    },
+    {
+      "texto": "Una promesa se quedará sin su await y se marchará sola a fallar en silencio. Lo sabréis dentro de tres semanas, y por casualidad.",
+      "evita": "dejar un catch vacío «para luego»",
+      "compatible": { "signo": "csharp", "matiz": "que olvida los mismos await" }
+    },
+    {
+      "texto": "Cantan los astros que 0.1 + 0.2 tampoco sumará 0.3 hoy. Alguien redondeará a mano y el error se esconderá dos decimales más allá.",
+      "evita": "comparar decimales con ===",
+      "compatible": { "signo": "sql", "matiz": "que tiene un DECIMAL de verdad" }
+    },
+    {
+      "texto": "Saldrá un framework nuevo antes de que acabéis de configurar el de ayer. Vuestro proyecto ya es antiguo, y aún no tiene ni una línea.",
+      "evita": "reescribir la web cada vez que salga otro",
+      "compatible": { "signo": "php", "matiz": "que vio pasar a todos los anteriores" }
+    }
+  ],
+  "python": [
+    {
+      "texto": "Hoy un espacio de más os romperá la indentación de una función que funcionaba. El intérprete lo verá al instante; vosotros, en una hora.",
+      "evita": "mezclar tabuladores y espacios en el mismo fichero",
+      "compatible": { "signo": "go", "matiz": "que formatea sin preguntar" }
+    },
+    {
+      "texto": "Una lista por defecto en vuestra función recordará todo lo que le hicisteis en llamadas anteriores. Ella no olvida, y no la veréis venir.",
+      "evita": "escribir def f(x=[]) y seguir con vuestra vida",
+      "compatible": { "signo": "haskell", "matiz": "que jamás os dejaría mutarla" }
+    },
+    {
+      "texto": "El entorno virtual que creíais activado no lo estaba. Instalaréis paquetes en el sistema y el sistema, con razón, dejará de hablaros.",
+      "evita": "hacer sudo pip install «solo esta vez»",
+      "compatible": { "signo": "rust", "matiz": "que también descarga medio mundo" }
+    },
+    {
+      "texto": "A media tarde aparecerá 'NoneType' object is not subscriptable, en una función que juraba devolver algo siempre.",
+      "evita": "dar por hecho que nunca devuelve None",
+      "compatible": { "signo": "kotlin", "matiz": "que lo habría pillado al compilar" }
+    },
+    {
+      "texto": "Un notebook ejecutado en desorden os dará un resultado precioso que nadie, ni siquiera vosotros, podrá volver a reproducir.",
+      "evita": "ejecutar la celda doce antes que la tres",
+      "compatible": { "signo": "sql", "matiz": "si la consulta va en la celda uno" }
+    },
+    {
+      "texto": "Las anotaciones de tipos os prometerán orden, pero el intérprete ni las mira. Un int disfrazado de str se colará igual, sonriendo.",
+      "evita": "creer que el intérprete comprueba los tipos",
+      "compatible": { "signo": "typescript", "matiz": "que entiende vuestro dolor" }
+    },
+    {
+      "texto": "Ese except: pass se tragará el error de hoy y lo guardará en silencio. Las desgracias calladas, os lo advierto, son las que más duran.",
+      "evita": "capturar Exception y seguir como si nada",
+      "compatible": { "signo": "csharp", "matiz": "que se traga las mismas excepciones" }
+    }
+  ],
+  "java": [
+    {
+      "texto": "Hoy un NullPointerException os mirará desde la línea 214 de un fichero que no habéis abierto en vuestra vida. Y aun así, la culpa es vuestra.",
+      "evita": "llamar a get() sobre un Optional vacío",
+      "compatible": { "signo": "sql", "matiz": "que también colecciona NULL" }
+    },
+    {
+      "texto": "Crearéis una fábrica de fábricas para instanciar un objeto que solo tenía un campo. Los astros os aplauden con resignación.",
+      "evita": "añadir una interfaz con una sola implementación",
+      "compatible": { "signo": "csharp", "matiz": "su gemelo separado al nacer" }
+    },
+    {
+      "texto": "La traza del error ocupará trescientas líneas y la causa real estará en la última, escondida tras cuarenta capas de proxies.",
+      "evita": "leer solo la primera línea de la traza",
+      "compatible": { "signo": "go", "matiz": "que os daría un error de una línea" }
+    },
+    {
+      "texto": "El recolector de basura se tomará una pausa en el peor momento posible, y vuestra aplicación se quedará mirando al vacío con él.",
+      "evita": "subir la memoria del heap sin preguntar por qué",
+      "compatible": { "signo": "rust", "matiz": "que nunca necesitó recolector" }
+    },
+    {
+      "texto": "Compararéis dos cadenas con == y funcionará en las pruebas. En producción dejará de funcionar sin que hayáis cambiado una línea.",
+      "evita": "fiaros de == entre dos String",
+      "compatible": { "signo": "javascript", "matiz": "que tampoco sabe qué es igual" }
+    },
+    {
+      "texto": "Un getter, un setter, un constructor y un equals después, vuestra clase de dos campos ocupa ya ochenta líneas. Y le falta el hashCode.",
+      "evita": "sobrescribir equals sin tocar hashCode",
+      "compatible": { "signo": "kotlin", "matiz": "que lo haría en una línea" }
+    },
+    {
+      "texto": "Escuchad: el classpath trae hoy dos versiones de la misma librería, y la JVM elegirá la peor, como mandan las viejas canciones.",
+      "evita": "copiar otro .jar en la carpeta lib",
+      "compatible": { "signo": "php", "matiz": "que también se pierde entre includes" }
+    }
+  ],
+  "csharp": [
+    {
+      "texto": "Hoy un .Result en código asíncrono bloqueará el hilo, y el hilo esperará a otro que espera por él. Así acaban las grandes tragedias.",
+      "evita": "llamar a .Wait() «solo en este sitio»",
+      "compatible": { "signo": "go", "matiz": "que lo arreglaría con un canal" }
+    },
+    {
+      "texto": "Un NullReferenceException brotará en el sitio más inesperado, aunque el compilador os avisó con cuarenta advertencias amarillas.",
+      "evita": "silenciar los avisos con el operador !",
+      "compatible": { "signo": "kotlin", "matiz": "que también presume de nulos seguros" }
+    },
+    {
+      "texto": "Escribiréis una consulta LINQ tan elegante que nadie sabrá cuántas veces recorre la lista. Los astros os lo adelantan: muchas.",
+      "evita": "enumerar dos veces el mismo IEnumerable",
+      "compatible": { "signo": "sql", "matiz": "que lo haría en una sola pasada" }
+    },
+    {
+      "texto": "Vuestra solución tendrá hoy catorce proyectos para una sola API. Cada capa llamará a la siguiente, y la última no hará nada.",
+      "evita": "crear un proyecto nuevo para cada capa",
+      "compatible": { "signo": "java", "matiz": "con quien comparte capas y manías" }
+    },
+    {
+      "texto": "Escuchad: un async void se escapará del flujo y fallará donde nadie pueda capturarlo. Lo veréis en los registros, si alguien los lee.",
+      "evita": "escribir async void fuera de un evento",
+      "compatible": { "signo": "rust", "matiz": "que os prohibiría esa locura" }
+    },
+    {
+      "texto": "Abriréis una región para ordenar el fichero y la cerraréis sobre dos mil líneas que nadie volverá a desplegar.",
+      "evita": "esconder el desastre dentro de un #region",
+      "compatible": { "signo": "cobol", "matiz": "que también lo divide todo en secciones" }
+    },
+    {
+      "texto": "Los astros ven un DateTime.Now en vuestro código, y una zona horaria esperándolo a la vuelta de la esquina con las manos frías.",
+      "evita": "guardar fechas sin su zona horaria",
+      "compatible": { "signo": "python", "matiz": "que tampoco se aclara con las zonas" }
+    }
+  ],
+  "go": [
+    {
+      "texto": "Hoy escribiréis if err != nil tantas veces que soñaréis con ello. El error, por supuesto, estará en el único que olvidasteis.",
+      "evita": "devolver el error sin decir de dónde viene",
+      "compatible": { "signo": "rust", "matiz": "que lo resolvería con una interrogación" }
+    },
+    {
+      "texto": "Un import que no usáis impedirá que compile el programa entero. El compilador no negocia, y hoy menos que nunca.",
+      "evita": "importar con _ para engañar al compilador",
+      "compatible": { "signo": "haskell", "matiz": "en lo de no negociar" }
+    },
+    {
+      "texto": "Las goroutines que lanzasteis sin pensarlo seguirán vivas, esperando en un canal que nadie va a cerrar jamás.",
+      "evita": "lanzar goroutines sin saber cuándo acaban",
+      "compatible": { "signo": "kotlin", "matiz": "que prefiere sus corrutinas" }
+    },
+    {
+      "texto": "Escribiréis en un mapa sin inicializar y el pánico llegará al instante, limpio y sin rodeos, como todo lo que hace este lenguaje.",
+      "evita": "declarar un mapa y olvidar el make",
+      "compatible": { "signo": "php", "matiz": "que lo habría creado solo, sin quejarse" }
+    },
+    {
+      "texto": "Una interfaz con un nil dentro no será nil, aunque lo parezca. Os pasaréis la tarde comparando algo que no es nada con nada.",
+      "evita": "devolver un puntero nil como error",
+      "compatible": { "signo": "javascript", "matiz": "que tiene dos formas de no ser nada" }
+    },
+    {
+      "texto": "El formateador decidirá por vosotros dónde va cada llave. No es un consejo, es una ley, y hoy la cumpliréis sin rechistar.",
+      "evita": "abrir un debate sobre dónde van las llaves",
+      "compatible": { "signo": "cobol", "matiz": "que también impone sus columnas" }
+    },
+    {
+      "texto": "Una minúscula en el nombre de vuestra función la esconderá del mundo, y el mundo os preguntará por ella toda la mañana.",
+      "evita": "renombrar medio paquete por una mayúscula",
+      "compatible": { "signo": "java", "matiz": "que necesita tres palabras para eso" }
+    }
+  ],
+  "php": [
+    {
+      "texto": "Hoy strpos devolverá 0 y vuestro if lo tomará por false. El texto estaba ahí, al principio, y nadie quiso verlo.",
+      "evita": "comprobar con == lo que devuelve strpos",
+      "compatible": { "signo": "javascript", "matiz": "que también confunde el cero con la nada" }
+    },
+    {
+      "texto": "Una función pedirá la aguja y el pajar en un orden, y su vecina en el contrario. Los astros tampoco recuerdan cuál era cuál.",
+      "evita": "adivinar el orden de los argumentos",
+      "compatible": { "signo": "cobol", "matiz": "que al menos es raro siempre igual" }
+    },
+    {
+      "texto": "Os lo advierto: «Headers already sent» aparecerá por culpa de un espacio en blanco escondido antes de la etiqueta de apertura.",
+      "evita": "dejar líneas en blanco tras el cierre ?>",
+      "compatible": { "signo": "python", "matiz": "que también sufre por un espacio" }
+    },
+    {
+      "texto": "Depuraréis con var_dump y die() como hicieron vuestros mayores, y funcionará, y eso es lo que más os dolerá admitir.",
+      "evita": "dejar un var_dump() olvidado en producción",
+      "compatible": { "signo": "go", "matiz": "que también depura a base de Println" }
+    },
+    {
+      "texto": "Un array será hoy lista, diccionario y cajón de sastre a la vez, y cuando lo ordenéis perderá las claves sin avisar.",
+      "evita": "usar sort donde iba asort",
+      "compatible": { "signo": "typescript", "matiz": "que querría ponerle un tipo" }
+    },
+    {
+      "texto": "Un fichero mezclará HTML, consultas y lógica en la misma línea, y seréis vosotros quienes tengáis que tocarlo.",
+      "evita": "añadir otro include al include del include",
+      "compatible": { "signo": "sql", "matiz": "con quien comparte fichero y línea" }
+    },
+    {
+      "texto": "Ese $$nombre que os pareció ingenioso creará variables que nadie sabrá encontrar, ni siquiera el buscador del editor.",
+      "evita": "llamar a una variable con otra variable",
+      "compatible": { "signo": "haskell", "matiz": "que no tiene variables que varíen" }
+    }
+  ],
+  "cobol": [
+    {
+      "texto": "Vuestro programa cumplirá otro año más en producción y nadie sabrá dónde vive. Él sí sabe dónde vivís.",
+      "evita": "pronunciar la palabra migración cerca del mainframe",
+      "compatible": { "signo": "java", "matiz": "por conveniencia y miedo" }
+    },
+    {
+      "texto": "Bastará un punto en la columna equivocada para cerrar la frase antes de tiempo, y el programa lo obedecerá en silencio durante años.",
+      "evita": "escribir más allá de la columna 72",
+      "compatible": { "signo": "python", "matiz": "que también mide cada espacio" }
+    },
+    {
+      "texto": "El proceso por lotes de esta noche fallará a las cuatro de la madrugada. Nadie sabrá por qué, pero lleva haciéndolo desde siempre.",
+      "evita": "tocar un copybook que comparten cien programas",
+      "compatible": { "signo": "sql", "matiz": "compañeros de turno de noche" }
+    },
+    {
+      "texto": "Escribiréis MOVE, PERFORM y COMPUTE en mayúsculas, como quien grita al vacío. Y el vacío, os lo advierto, responderá con un ABEND.",
+      "evita": "añadir un GO TO «solo para salir de aquí»",
+      "compatible": { "signo": "haskell", "matiz": "por lo que tienen en común: nada" }
+    },
+    {
+      "texto": "Un campo PIC 9(5)V99 se quedará corto por un dígito, y la cifra se truncará en silencio, con toda la cortesía del mundo.",
+      "evita": "ampliar un PIC sin mirar quién lo lee",
+      "compatible": { "signo": "javascript", "matiz": "que también pierde decimales" }
+    },
+    {
+      "texto": "Llegará un fichero en EBCDIC y lo leeréis como si fuera ASCII. Las eñes, como siempre, serán las primeras en caer.",
+      "evita": "convertir ficheros sin mirar la codificación",
+      "compatible": { "signo": "php", "matiz": "que también sabe romper las eñes" }
+    },
+    {
+      "texto": "La DATA DIVISION ocupa ya más que el resto del programa, y hoy le añadiréis otro campo, como una piedra más en la muralla.",
+      "evita": "declarar otro FILLER «por si acaso»",
+      "compatible": { "signo": "kotlin", "matiz": "que lo resolvería con una data class" }
+    }
+  ],
+  "typescript": [
+    {
+      "texto": "Hoy el compilador os dirá que Usuario no es asignable a Usuario. Son el mismo tipo en dos versiones distintas, y los dos tienen razón.",
+      "evita": "resolverlo con as unknown as",
+      "compatible": { "signo": "rust", "matiz": "que sufre errores aún más largos" }
+    },
+    {
+      "texto": "Un any se colará en vuestro código para salir del paso y, como toda plaga, acabará extendiéndose por el proyecto entero.",
+      "evita": "escribir any «solo de momento»",
+      "compatible": { "signo": "python", "matiz": "que tampoco os obliga a nada" }
+    },
+    {
+      "texto": "Vuestros tipos jurarán que la API devuelve un número. La API, que no lee vuestros tipos, devolverá un texto, y con orgullo.",
+      "evita": "fiaros de la respuesta sin validarla",
+      "compatible": { "signo": "sql", "matiz": "que al menos sabe lo que guarda" }
+    },
+    {
+      "texto": "Activaréis el modo estricto y aparecerán, os lo advierto, seiscientos errores que llevaban años escondidos, todos a la vez.",
+      "evita": "volver a desactivarlo en silencio",
+      "compatible": { "signo": "kotlin", "matiz": "que nació estricto y no se queja" }
+    },
+    {
+      "texto": "Escribiréis un tipo genérico tan retorcido que ni vosotros podréis leerlo mañana. Funcionará, y nadie se atreverá a tocarlo jamás.",
+      "evita": "anidar cinco tipos condicionales",
+      "compatible": { "signo": "haskell", "matiz": "que os retará a algo peor" }
+    },
+    {
+      "texto": "El tsconfig.json tendrá hoy una opción más que no entendéis. Nadie la entiende, pero quitarla rompe la compilación.",
+      "evita": "copiar la configuración de otro proyecto",
+      "compatible": { "signo": "csharp", "matiz": "que también vive de ficheros XML" }
+    },
+    {
+      "texto": "Una librería sin tipos os obligará a escribir sus declaraciones a mano, y os inventaréis la mitad. Los astros lo saben, y el usuario lo sabrá.",
+      "evita": "declarar el módulo entero sin mirar dentro",
+      "compatible": { "signo": "javascript", "matiz": "que nunca pidió tipos" }
+    }
+  ],
+  "sql": [
+    {
+      "texto": "Hoy un DELETE sin WHERE os mirará desde el editor, esperando a que pulséis Intro. Los astros os lo advierten una sola vez.",
+      "evita": "ejecutar nada en producción sin un BEGIN",
+      "compatible": { "signo": "cobol", "matiz": "que lo guarda todo desde siempre" }
+    },
+    {
+      "texto": "NULL no será igual a NULL, ni distinto de NULL, ni nada. Os pasaréis la tarde preguntando y él no os responderá jamás.",
+      "evita": "comparar con = NULL en vez de IS NULL",
+      "compatible": { "signo": "javascript", "matiz": "que tiene un NaN que tampoco es él" }
+    },
+    {
+      "texto": "Un GROUP BY os exigirá una columna que no queríais agrupar. Se la daréis, y la consulta os devolverá algo que nadie pidió.",
+      "evita": "arreglarlo con un DISTINCT sin entenderlo",
+      "compatible": { "signo": "python", "matiz": "que lo haría en un bucle, con pena" }
+    },
+    {
+      "texto": "Olvidaréis una condición en el JOIN y la consulta devolverá millones de filas, todas inocentes, todas multiplicadas sin piedad.",
+      "evita": "poner SELECT * en una tabla de cien columnas",
+      "compatible": { "signo": "java", "matiz": "que hará cien consultas para lo mismo" }
+    },
+    {
+      "texto": "Esa consulta que tardaba un segundo tardará un minuto, y el índice que le falta lleva años esperando a que alguien lo cree.",
+      "evita": "añadir índices a todas las columnas",
+      "compatible": { "signo": "php", "matiz": "que lanzaba esa consulta en un bucle" }
+    },
+    {
+      "texto": "Sin ORDER BY, las filas saldrán hoy en el orden de siempre por pura costumbre. Mañana cambiarán, y nadie sabrá decir por qué.",
+      "evita": "confiar en el orden por defecto",
+      "compatible": { "signo": "go", "matiz": "que tampoco ordena sus mapas" }
+    },
+    {
+      "texto": "Escuchad: una transacción abierta desde la mañana bloqueará la tabla, y todos esperaréis en fila a que alguien haga COMMIT.",
+      "evita": "abrir una transacción e irse a comer",
+      "compatible": { "signo": "kotlin", "matiz": "que se suspende con más elegancia" }
+    }
+  ],
+  "kotlin": [
+    {
+      "texto": "Hoy escribiréis !! para que el compilador os deje en paz, y en producción esos dos signos se convertirán en un NullPointerException.",
+      "evita": "poner !! donde iba un ?.",
+      "compatible": { "signo": "typescript", "matiz": "que también grita con exclamaciones" }
+    },
+    {
+      "texto": "Encadenaréis let, run, apply y also hasta que nadie sepa qué es it ni de dónde viene. Ni siquiera it lo sabe.",
+      "evita": "anidar tres let uno dentro de otro",
+      "compatible": { "signo": "haskell", "matiz": "que encadena con más pedantería" }
+    },
+    {
+      "texto": "Un lateinit prometerá llegar a tiempo y no llegará. El error os dirá que nunca fue inicializado, con toda la calma del mundo.",
+      "evita": "usar lateinit para no pensar en el null",
+      "compatible": { "signo": "csharp", "matiz": "que también hace promesas con sus nulos" }
+    },
+    {
+      "texto": "Una corrutina lanzada en el ámbito equivocado seguirá trabajando cuando ya nadie la espere, como un juglar cantando a una sala vacía.",
+      "evita": "lanzar corrutinas en GlobalScope",
+      "compatible": { "signo": "go", "matiz": "que también deja hilos sueltos" }
+    },
+    {
+      "texto": "La compilación tardará lo justo para que olvidéis qué estabais cambiando. Al terminar, os lo advierto, cambiaréis otra cosa.",
+      "evita": "tocar el script de compilación sin copia",
+      "compatible": { "signo": "rust", "matiz": "con quien compite en tiempos de espera" }
+    },
+    {
+      "texto": "Esa función de extensión que añadisteis a String aparecerá en el autocompletado de todo el proyecto, y nadie sabrá de dónde vino.",
+      "evita": "extender String con lógica de negocio",
+      "compatible": { "signo": "javascript", "matiz": "que también toca prototipos ajenos" }
+    },
+    {
+      "texto": "Un companion object crecerá hasta convertirse en el cajón donde vive todo lo estático que jurasteis no volver a escribir.",
+      "evita": "meter utilidades en el companion object",
+      "compatible": { "signo": "java", "matiz": "que lo llama static sin rodeos" }
+    }
+  ],
+  "haskell": [
+    {
+      "texto": "Hoy intentaréis explicar qué es una mónada y, en cuanto lo entendáis, perderéis para siempre la capacidad de explicarlo.",
+      "evita": "escribir otro tutorial de mónadas",
+      "compatible": { "signo": "javascript", "matiz": "que usa mónadas sin saberlo" }
+    },
+    {
+      "texto": "La pereza de vuestro programa guardará mil millones de cálculos pendientes y los evaluará todos a la vez, al final, sin avisar.",
+      "evita": "usar foldl donde iba foldl'",
+      "compatible": { "signo": "python", "matiz": "que también lo deja todo para luego" }
+    },
+    {
+      "texto": "El compilador os devolverá un error de tipos de veinte líneas con la palabra «rígido» dentro. Los astros tampoco saben qué significa.",
+      "evita": "añadir otra extensión del lenguaje para callarlo",
+      "compatible": { "signo": "typescript", "matiz": "que intenta imitar vuestros tipos" }
+    },
+    {
+      "texto": "Os lo advierto: escribiréis una función sin puntos tan elegante que al día siguiente nadie sabrá qué hace ni qué recibe.",
+      "evita": "componer siete funciones en una sola línea",
+      "compatible": { "signo": "sql", "matiz": "que también es declarativo, a su manera" }
+    },
+    {
+      "texto": "Un head sobre una lista vacía romperá vuestra pureza en tiempo de ejecución. Tanto tipo, tanta prueba, y os tumba una lista sin nada.",
+      "evita": "usar head sin mirar si hay algo",
+      "compatible": { "signo": "rust", "matiz": "que también presume de seguridad" }
+    },
+    {
+      "texto": "Querréis imprimir un valor para depurar y descubriréis que necesitáis IO, y IO lo contaminará todo como una tinta que no se borra.",
+      "evita": "colar un unsafePerformIO para salir del paso",
+      "compatible": { "signo": "cobol", "matiz": "que imprime sin pedir permiso" }
+    },
+    {
+      "texto": "Escuchad: cuando por fin compile, funcionará a la primera. Hasta llegar ahí pasarán varias tardes y un par de lunas.",
+      "evita": "decir «si compila, funciona» en voz alta",
+      "compatible": { "signo": "csharp", "matiz": "que no se cree nada de esto" }
+    }
+  ]
+}
