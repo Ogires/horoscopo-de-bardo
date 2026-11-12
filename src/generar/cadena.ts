@@ -1,6 +1,6 @@
 // src/generar/cadena.ts — gpt-oss-120b → gpt-oss-20b → banco
 import type { Profecia } from "../tipos";
-import { profeciaDelBanco } from "./banco";
+import { profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
 import { ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
 import { sortearDia } from "./sorteo";
 import { motivoInvalida, repite, sextetos } from "./validar";
@@ -57,7 +57,8 @@ async function pedirAGroq(apiKey: string, modelo: string, usuario: string): Prom
 
 export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<DiaGenerado> {
   const sorteo = sortearDia(fecha);
-  const previos = new Map([...deps.historial].map(([signo, textos]) => [signo, new Set(textos.flatMap(sextetos))]));
+  // Filtro de copias global: los 14 días de todos los signos y el banco entero, en un solo Set
+  const previos = new Set([...[...deps.historial.values()].flat(), ...TEXTOS_DEL_BANCO].flatMap(sextetos));
   const recientes = new Map([...deps.historial].map(([signo, textos]) => [signo, textos.slice(0, 3)]));
   const usuario = mensajeDelDia(fecha, sorteo, recientes);
   const fallos: string[] = [];
@@ -68,18 +69,21 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
       const r = await pedirAGroq(deps.apiKey, modelo, usuario);
       tokens += r.tokens;
       const porSigno = new Map(r.profecias.map((p) => [p.signo, p]));
+      // Más lo que ya se ha aceptado hoy; empieza de cero con cada modelo
+      const vistos = new Set(previos);
       let malas = 0;
       const profecias = sorteo.map((s): Profecia => {
         const p = porSigno.get(s.signo);
         const candidata = p && { texto: p.texto.trim(), evita: p.evita.trim(), compatible: { signo: s.compatible, matiz: p.matiz.trim() } };
         const motivo = !candidata
           ? "falta"
-          : motivoInvalida(candidata, s.signo) ?? (repite(candidata.texto, previos.get(s.signo) ?? new Set()) ? "repetida" : null);
+          : motivoInvalida(candidata, s.signo) ?? (repite(candidata.texto, vistos) ? "repetida" : null);
         if (!candidata || motivo) {
           malas++;
           fallos.push(`${modelo}:${s.signo}:${motivo}`);
           return profeciaDelBanco(fecha, s);
         }
+        for (const sexteto of sextetos(candidata.texto)) vistos.add(sexteto);
         return { signo: s.signo, ...candidata, puerto: s.puerto, origen: "ia" };
       });
       if (malas <= MAX_MALAS) return { profecias, modelo, fallos, tokens };

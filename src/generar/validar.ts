@@ -50,5 +50,5 @@ export function sextetos(texto: string): string[] {
   return r;
 }
 
-// Un solo Set con los sextetos de los últimos 14 días: muy por debajo de los 10 ms de CPU del cron
+// Un solo Set con los sextetos de 14 días de todos los signos y del banco: muy por debajo de los 10 ms de CPU del cron
 export const repite = (texto: string, previos: Set<string>): boolean => sextetos(texto).some((s) => previos.has(s));

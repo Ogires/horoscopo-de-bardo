@@ -10,6 +10,9 @@ interface EntradaBanco {
 }
 const BANCO = banco as Record<string, EntradaBanco[]>;
 
+// Para que la IA no copie el banco: entra en el filtro de copias de la cadena
+export const TEXTOS_DEL_BANCO: readonly string[] = Object.values(BANCO).flatMap((l) => l.map((e) => e.texto));
+
 export function profeciaDelBanco(fecha: string, sorteo: SorteoSigno): Profecia {
   const lista = BANCO[sorteo.signo];
   const e = lista[hash32(`banco:${fecha}:${sorteo.signo}`) % lista.length];

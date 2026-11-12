@@ -33,10 +33,14 @@ export const restaurarFetch = () => {
 
 type Parcial = Partial<{ texto: string; evita: string; matiz: string }>;
 
+// El filtro de copias mira todos los signos: el slug va cada pocas palabras para que
+// ningún sexteto de un signo coincida con el de otro
+const FRASES = ["os lo advierto", "el error de hoy", "volverá con la luna", "y nadie sabrá por", "qué compilaba ayer"];
+
 export function profeciasIa(fecha: string, cambios: Record<string, Parcial> = {}) {
-  return SIGNOS.map((s, i) => ({
+  return SIGNOS.map((s) => ({
     signo: s.slug,
-    texto: `Os lo advierto, ${s.nombre}: el error ${i} del ${fecha} volverá con la luna nueva y nadie sabrá por qué compilaba ayer.`,
+    texto: `${s.nombre}: ${FRASES.map((f) => `${f} ${s.slug}`).join(", ")}, el ${fecha}.`,
     evita: "tocar producción antes del café",
     matiz: "a regañadientes",
     ...cambios[s.slug],

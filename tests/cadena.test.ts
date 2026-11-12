@@ -1,5 +1,6 @@
 // tests/cadena.test.ts
 import { afterEach, describe, expect, it } from "vitest";
+import banco from "../data/banco.json";
 import { generarDia } from "../src/generar/cadena";
 import { sortearDia } from "../src/generar/sorteo";
 import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch } from "./helpers";
@@ -70,6 +71,51 @@ describe("generarDia", () => {
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(ia) : null));
     const g = await generarDia(FECHA, deps(historial));
     expect(g.profecias.find((p) => p.signo === "rust")?.origen).toBe("banco");
+  });
+
+  const repetida = (g: { fallos: string[]; profecias: { signo: string; origen: string }[] }, signo: string) => {
+    expect(g.profecias.find((p) => p.signo === signo)?.origen).toBe("banco");
+    expect(g.fallos).toContain(`openai/gpt-oss-120b:${signo}:repetida`);
+  };
+
+  it("descarta una profecía que copia 6 palabras de otro signo en los últimos días", async () => {
+    const ia = profeciasIa(FECHA);
+    const historial = new Map([["haskell", ["Primero otra profecía.", ia[0].texto]]]);
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(ia) : null));
+    const g = await generarDia(FECHA, deps(historial));
+    repetida(g, "rust");
+    expect(g.profecias.filter((p) => p.origen === "banco")).toHaveLength(1);
+  });
+
+  it("descarta una profecía que copia 6 palabras del banco, aunque sea de otro signo", async () => {
+    const ochoPalabras = banco.javascript[0].texto.split(" ").slice(0, 8).join(" ");
+    const copia = `Escuchad, Rust: ${ochoPalabras} y así seguirá hasta el final del día.`;
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { rust: { texto: copia } })) : null));
+    repetida(await generarDia(FECHA, deps()), "rust");
+  });
+
+  it("descarta una profecía que copia 6 palabras de otro signo del mismo día", async () => {
+    const frase = "el compilador os hablará hoy con una crueldad que nadie merece";
+    const cambios = {
+      rust: { texto: `Rust, os lo advierto: ${frase}, y tendrá toda la razón del mundo.` },
+      go: { texto: `Go, escuchad: ${frase}, ni siquiera vosotros después de tanto café.` },
+    };
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, cambios)) : null));
+    const g = await generarDia(FECHA, deps());
+    expect(g.profecias.find((p) => p.signo === "rust")?.origen).toBe("ia");
+    repetida(g, "go");
+  });
+
+  it("el modelo de respaldo no choca con lo que dijo el modelo descartado", async () => {
+    const largo = { texto: "x".repeat(200) };
+    const malas = { rust: largo, go: largo, php: largo, sql: largo };
+    interceptar((url, cuerpo) => {
+      if (url !== GROQ_URL) return null;
+      return respuestaGroq(cuerpo.model === "openai/gpt-oss-120b" ? profeciasIa(FECHA, malas) : profeciasIa(FECHA));
+    });
+    const g = await generarDia(FECHA, deps());
+    expect(g.modelo).toBe("openai/gpt-oss-20b");
+    expect(g.profecias.every((p) => p.origen === "ia")).toBe(true);
   });
 
   it("al prompt solo le llegan los tres días más recientes", async () => {
