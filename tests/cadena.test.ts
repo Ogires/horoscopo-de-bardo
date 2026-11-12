@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import banco from "../data/banco.json";
 import { matizDeReserva } from "../src/generar/banco";
 import { generarDia } from "../src/generar/cadena";
-import { EJEMPLOS } from "../src/generar/prompt";
+import { EJEMPLOS, REMATE } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
 import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch } from "./helpers";
 
@@ -213,6 +213,12 @@ describe("generarDia", () => {
 
   it("descarta una profecía que copia un ejemplo del prompt", async () => {
     interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { php: { texto: EJEMPLOS[2].texto } })) : null));
+    repetida(await generarDia(FECHA, deps()), "php");
+  });
+
+  it("descarta una profecía que copia el remate «Bien» del prompt", async () => {
+    const texto = `Un fallo tonto os arruinará la semana entera sin avisar. ${REMATE.bien}`;
+    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { php: { texto } })) : null));
     repetida(await generarDia(FECHA, deps()), "php");
   });
 
