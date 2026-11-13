@@ -2,14 +2,14 @@
 import { describe, expect, it } from "vitest";
 import ganchos from "../data/ganchos.json";
 import { TEXTOS_DEL_BANCO } from "../src/generar/banco";
-import { EJEMPLOS, ESQUEMA, mensajeDelDia, REMATE, SISTEMA } from "../src/generar/prompt";
+import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
 import { SIGNO_POR_SLUG } from "../src/signos";
 import { motivoInvalida, repite, sextetos } from "../src/generar/validar";
 
 describe("prompt", () => {
   it("el sistema fija las reglas de la sección 5.3", () => {
-    for (const frase of ["100 a 150 caracteres", "remate", "burlas de perfiles", "despidos", "emojis", "misma palabra", "@Override"]) {
+    for (const frase of ["entre 18 y 26 palabras", "remate", "burlas de perfiles", "despidos", "emojis", "misma palabra", "@Override"]) {
       expect(SISTEMA).toContain(frase);
     }
   });
@@ -33,8 +33,18 @@ describe("prompt", () => {
     }
   });
 
-  it("el matiz se pide en palabras: el modelo no cuenta caracteres", () => {
+  it("texto y matiz se piden en palabras: el modelo no cuenta caracteres", () => {
+    expect(SISTEMA).toContain("dos frases y entre 18 y 26 palabras en total");
     expect(SISTEMA).toContain("de dos a cinco palabras");
+    expect(SISTEMA).not.toMatch(/\d+ a \d+ caracteres/);
+  });
+
+  it("el matiz no nombra lenguajes: se lee detrás del nombre del compatible", () => {
+    expect(SISTEMA).toContain('Va detrás del nombre del compatible ("Go, a regañadientes"): no nombres lenguajes');
+  });
+
+  it("es una profecía: nunca en imperativo", () => {
+    expect(SISTEMA).toContain('nunca en imperativo ("Compilad", "Incluid")');
   });
 
   it("fidelidad al gancho: contarlo tal cual, sin exagerarlo ni añadirle consecuencias", () => {
@@ -43,12 +53,15 @@ describe("prompt", () => {
     }
   });
 
-  it("remate concreto, con un par «Mal / Bien» que no sale del banco", () => {
-    expect(SISTEMA).toContain("nunca una frase abstracta");
-    expect(SISTEMA).toContain(`Mal: "${REMATE.mal}"`);
-    expect(SISTEMA).toContain(`Bien: "${REMATE.bien}"`);
-    const banco = new Set(TEXTOS_DEL_BANCO.flatMap(sextetos));
-    expect(repite(REMATE.bien, banco)).toBe(false);
+  it("el remate varía de forma, es concreto y no tiene un «Bien» que se vuelva plantilla", () => {
+    for (const frase of [
+      "una consecuencia absurda, la resignación del bardo o un giro irónico", "Nunca una frase abstracta",
+      'Mal: "La claridad será una ilusión."', '"Lo notaréis al..."',
+    ]) {
+      expect(SISTEMA).toContain(frase);
+    }
+    // Con un solo «Bien», el modelo lo copió en las doce profecías
+    expect(SISTEMA).not.toMatch(/El remate[^\n]*Bien:/);
   });
 
   it("conjugación del vosotros, con la tercera persona como salida", () => {
@@ -70,14 +83,19 @@ describe("prompt", () => {
     }
   });
 
-  it("los ejemplos tienen la forma pedida: 100-150 caracteres, dos frases, matiz de 2 a 5 palabras y arranques variados", () => {
+  it("los ejemplos tienen la forma pedida: 18-26 palabras, dos frases, matiz de 2 a 5 palabras y arranques variados", () => {
     const primeras = EJEMPLOS.map((e) => e.texto.split(/\s/)[0].toLowerCase());
     expect(new Set(primeras).size).toBe(EJEMPLOS.length);
+    const remates: string[] = [];
     for (const e of EJEMPLOS) {
-      expect([...e.texto].length, e.texto).toBeGreaterThanOrEqual(100);
+      const palabrasTexto = e.texto.split(/\s+/).length;
+      expect(palabrasTexto, e.texto).toBeGreaterThanOrEqual(18);
+      expect(palabrasTexto, e.texto).toBeLessThanOrEqual(26);
       expect([...e.texto].length, e.texto).toBeLessThanOrEqual(150);
       // Una frase acaba en . ! o ? seguido de mayúscula: el ? de Rust en medio no cuenta
-      expect(e.texto.split(/(?<=[.!?])\s+(?=\p{Lu})/u), e.texto).toHaveLength(2);
+      const frases = e.texto.split(/(?<=[.!?])\s+(?=\p{Lu})/u);
+      expect(frases, e.texto).toHaveLength(2);
+      remates.push(frases[1]);
       expect(e.texto, e.texto).not.toMatch(/^(?:os |escuchad|cantan|oíd|cuidado|atended)/i);
       const palabras = e.matiz.split(/\s+/).length;
       expect(palabras, e.matiz).toBeGreaterThanOrEqual(2);
@@ -87,6 +105,9 @@ describe("prompt", () => {
     // Los ejemplos no pueden enseñar la plantilla de verbos en futuro: como mucho dos empiezan por uno
     expect(EJEMPLOS.filter((e) => /^\p{Lu}\p{Ll}+(?:réis|rán|rá)\s/u.test(e.texto)).length).toBeLessThanOrEqual(2);
     expect(EJEMPLOS.some((e) => /^(?:Cuando|Si)\s/.test(e.texto))).toBe(true);
+    // Remates de formas distintas: ninguno con la plantilla «Lo …réis al…» y no dos con la misma palabra
+    for (const r of remates) expect(r, r).not.toMatch(/^Lo \p{L}+réis\s/u);
+    expect(new Set(remates.map((r) => r.split(/\s/)[0])).size).toBe(remates.length);
   });
 
   it("el mensaje lleva los doce signos con su gancho, su compatible y los días anteriores", () => {
