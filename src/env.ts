@@ -11,6 +11,8 @@ export interface Env {
   GROQ_API_KEY: string;
   /** Para los modelos con el prefijo zai: (src/generar/cadena.ts) */
   ZAI_API_KEY: string;
+  /** Opcional: otro endpoint de Z.ai. Sin ella, la API estándar (ZAI_URL en src/generar/cadena.ts) */
+  ZAI_URL?: string;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_AVISOS: string;
 }

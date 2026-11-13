@@ -4,6 +4,8 @@
 // defecto, solo openai/gpt-oss-120b). Los que llevan el prefijo zai: van a Z.ai (ver cadena.ts).
 // Keys, sin mostrarlas: GROQ_API_KEY de ARCHIVO_VARS (por defecto la de IFC) y ZAI_API_KEY del
 // .dev.vars de este repo. Solo se exige la de los proveedores que estén en MODELOS.
+// ZAI_URL, opcional y del mismo .dev.vars: otro endpoint de Z.ai. Tampoco se muestra; solo se dice
+// si se usa la URL por defecto o una configurada.
 // ESFUERZO es el reasoning_effort de Groq; PENSAR=1 activa el thinking de Z.ai.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -23,8 +25,8 @@ if (!modelos.length) throw new Error("MODELOS está vacío");
 const DIAS = Number(process.env.DIAS ?? 3);
 if (!Number.isInteger(DIAS) || DIAS < 1) throw new Error(`DIAS debe ser un entero mayor que 0, no ${process.env.DIAS}`);
 
-// Solo dice si falta: la key nunca se imprime
-function leerClave(ruta: string, variable: string): string | undefined {
+// Solo dice si falta: el valor (una key, una URL) nunca se imprime
+function leerVariable(ruta: string, variable: string): string | undefined {
   if (!existsSync(ruta)) return undefined;
   const linea = readFileSync(ruta, "utf8").split(/\r?\n/).find((l) => l.startsWith(`${variable}=`));
   return linea?.slice(variable.length + 1).trim().replace(/^"|"$/g, "") || undefined;
@@ -33,16 +35,19 @@ const usaZai = modelos.some((m) => m.startsWith(PREFIJO_ZAI));
 const usaGroq = modelos.some((m) => !m.startsWith(PREFIJO_ZAI));
 const rutaGroq = process.env.ARCHIVO_VARS ?? "../interview-fight-club/.dev.vars";
 const rutaZai = fileURLToPath(new URL("../../.dev.vars", import.meta.url));
-const groq = usaGroq ? leerClave(rutaGroq, "GROQ_API_KEY") : undefined;
+const groq = usaGroq ? leerVariable(rutaGroq, "GROQ_API_KEY") : undefined;
 if (usaGroq && !groq) throw new Error(`No hay GROQ_API_KEY en ${rutaGroq}`);
-const zai = usaZai ? leerClave(rutaZai, "ZAI_API_KEY") : undefined;
+const zai = usaZai ? leerVariable(rutaZai, "ZAI_API_KEY") : undefined;
 if (usaZai && !zai) throw new Error(`No hay ZAI_API_KEY en ${rutaZai}`);
 const claves = { groq: groq ?? "", zai };
+const zaiUrl = usaZai ? leerVariable(rutaZai, "ZAI_URL") : undefined;
+// La URL a la que van de verdad las peticiones de Z.ai, para medirlas (ver el fetch de abajo)
+const urlZai = zaiUrl || ZAI_URL;
 
 console.log(
   `modelos: ${modelos.join(" → ")}` +
     (usaGroq ? ` · reasoning_effort (Groq): ${esfuerzo}` : "") +
-    (usaZai ? ` · thinking (Z.ai): ${pensar ? "sí" : "no"}` : ""),
+    (usaZai ? ` · thinking (Z.ai): ${pensar ? "sí" : "no"} · URL de Z.ai: ${zaiUrl ? "la de ZAI_URL en .dev.vars" : "la estándar"}` : ""),
 );
 
 // Groq limita a 8K tokens por minuto y cada llamada pide ~4.000 más el tope de salida:
@@ -96,7 +101,7 @@ const fetchReal = globalThis.fetch.bind(globalThis);
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const r = await fetchReal(input, init);
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-  const proveedor = url === ZAI_URL ? "zai" : "groq";
+  const proveedor = url === urlZai ? "zai" : "groq";
   const copia = r.clone();
   const modelo = String(JSON.parse(String(init?.body ?? "{}")).model ?? "?");
   if (!r.ok) {
@@ -147,7 +152,7 @@ for (let i = 0; i < DIAS; i++) {
   const fecha = sumarDias(inicio, i);
   const t0 = Date.now();
   usos = [];
-  const g = await generarDia(fecha, { claves, modelos, historial, esfuerzo, pensar });
+  const g = await generarDia(fecha, { claves, modelos, historial, esfuerzo, pensar, zaiUrl });
   const ms = Date.now() - t0;
   const ganchos = Object.fromEntries(sortearDia(fecha).map((s) => [s.signo, s.gancho]));
   dias.push({ ...g, fecha, ms, usos, ganchos });

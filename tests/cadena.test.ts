@@ -107,6 +107,27 @@ describe("generarDia", () => {
       expect(c.cuerpo.stream).toBeUndefined();
     });
 
+    it("por defecto van a la API estándar de Z.ai", async () => {
+      const llamadas = interceptar((url) => (url.startsWith("https://api.z.ai/") ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, { ...deps(), modelos: [glm] });
+      expect(llamadas.map((l) => l.url)).toEqual(["https://api.z.ai/api/paas/v4/chat/completions"]);
+    });
+
+    it("con zaiUrl (la variable ZAI_URL del Worker), van a esa URL", async () => {
+      const otra = "https://zai.example/v4/chat/completions";
+      const llamadas = interceptar((url) => (url === otra || url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), modelos: [glm], zaiUrl: otra });
+      expect(llamadas.map((l) => l.url)).toEqual([otra]);
+      expect(llamadas[0].cabeceras.get("authorization")).toBe("Bearer clave-zai");
+      expect(g.modelo).toBe(glm);
+    });
+
+    it("una zaiUrl vacía cuenta como sin configurar: la API estándar", async () => {
+      const llamadas = interceptar((url) => (url.startsWith("https://api.z.ai/") ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, { ...deps(), modelos: [glm], zaiUrl: "" });
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL]);
+    });
+
     it("con pensar, activan el razonamiento (thinking) con un tope de salida mayor", async () => {
       const llamadas = interceptar((url) => (url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
       await generarDia(FECHA, { ...deps(), modelos: [glm], pensar: true });

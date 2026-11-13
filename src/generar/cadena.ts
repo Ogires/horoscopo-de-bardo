@@ -8,7 +8,7 @@ import { motivoInvalida, repite, sextetos } from "./validar";
 
 export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // La API general. La del plan de programación (/api/coding/paas/v4) solo se puede usar en las
-// herramientas de programación que admite Z.ai
+// herramientas de programación que admite Z.ai. Se cambia con zaiUrl (variable ZAI_URL del Worker)
 export const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 /** Un id de modelo con este prefijo va a Z.ai, sin el prefijo; el resto, a Groq */
 export const PREFIJO_ZAI = "zai:";
@@ -41,6 +41,8 @@ export interface DepsGeneracion {
   esfuerzo?: Esfuerzo;
   /** thinking de Z.ai; por defecto false */
   pensar?: boolean;
+  /** Endpoint de Z.ai; sin él (o vacío), ZAI_URL */
+  zaiUrl?: string;
 }
 
 export type Esfuerzo = "low" | "medium";
@@ -134,7 +136,7 @@ function peticionDelModelo(modelo: string, usuario: string, deps: DepsGeneracion
   if (modelo.startsWith(PREFIJO_ZAI)) {
     return {
       proveedor: "zai",
-      url: ZAI_URL,
+      url: deps.zaiUrl || ZAI_URL,
       clave: deps.claves.zai,
       // El modelo gratuito de Z.ai es más lento que Groq (~60 tokens/s razonando): con el tope de
       // pensar caben ~4,5 minutos. El cron tiene 15 minutos de reloj y no cuenta la espera como CPU
