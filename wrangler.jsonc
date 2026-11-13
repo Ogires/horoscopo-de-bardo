@@ -15,12 +15,14 @@
   // Laxo (lección 9), pero basta: ninguna petición gasta IA
   "ratelimits": [{ "name": "RL", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }],
   "vars": {
-    "MODELO": "openai/gpt-oss-120b",
-    "MODELO_RESPALDO": "openai/gpt-oss-20b",
+    // GLM-5.3 de Z.ai (el prefijo zai: lo manda a Z.ai). Sin respaldo: si cae GLM, el día sale del
+    // banco. Groq se probó y su español no llegaba al nivel
+    "MODELO": "zai:glm-5.3",
+    "MODELO_RESPALDO": "",
     "TELEGRAM_CANAL": "@pendiente",
     "FECHA_LANZAMIENTO": "2026-12-01",
     "URL_PUBLICA": "https://bardo.webninja.fyi"
   }
-  // Secrets: GROQ_API_KEY, ZAI_API_KEY (modelos con el prefijo zai:), TELEGRAM_BOT_TOKEN,
-  // TELEGRAM_AVISOS (chat privado del administrador)
+  // Secrets: ZAI_API_KEY (modelos con el prefijo zai:), TELEGRAM_BOT_TOKEN, TELEGRAM_AVISOS (chat
+  // privado del administrador) y GROQ_API_KEY solo si se vuelve a poner un modelo de Groq
 }

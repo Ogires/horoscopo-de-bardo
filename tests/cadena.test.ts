@@ -1,8 +1,9 @@
 // tests/cadena.test.ts
+import { env } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
 import banco from "../data/banco.json";
 import { matizDeReserva } from "../src/generar/banco";
-import { generarDia } from "../src/generar/cadena";
+import { generarDia, modelosDe } from "../src/generar/cadena";
 import { ejemplosDelDia, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
 import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, respuestaTexto, restaurarFetch, ZAI_URL } from "./helpers";
@@ -12,6 +13,28 @@ const deps = (historial = new Map<string, string[]>()) => ({
   claves: { groq: "clave", zai: "clave-zai" }, modelos: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"], historial,
 });
 afterEach(restaurarFetch);
+
+describe("modelosDe: la cadena del cron sale de MODELO y MODELO_RESPALDO", () => {
+  it("los dos, en orden", () => {
+    expect(modelosDe({ MODELO: "zai:glm-5.3", MODELO_RESPALDO: "openai/gpt-oss-120b" })).toEqual(["zai:glm-5.3", "openai/gpt-oss-120b"]);
+  });
+
+  it.each([
+    ["vacío", ""],
+    ["con espacios", "   "],
+    ["sin definir", undefined],
+  ])("con el respaldo %s, solo el principal: si falla, el banco", (_, respaldo) => {
+    expect(modelosDe({ MODELO: "zai:glm-5.3", MODELO_RESPALDO: respaldo })).toEqual(["zai:glm-5.3"]);
+  });
+
+  it("quita los espacios de alrededor de cada id", () => {
+    expect(modelosDe({ MODELO: " zai:glm-5.3 ", MODELO_RESPALDO: "" })).toEqual(["zai:glm-5.3"]);
+  });
+
+  it("con la configuración de pruebas, como la de producción: GLM-5.3 sin respaldo", () => {
+    expect(modelosDe(env)).toEqual(["zai:glm-5.3"]);
+  });
+});
 
 describe("generarDia", () => {
   it("camino feliz: doce profecías de la IA con el puerto y el compatible del sorteo", async () => {
@@ -155,6 +178,31 @@ describe("generarDia", () => {
       expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL, GROQ_URL]);
       expect(g.modelo).toBe("openai/gpt-oss-120b");
       expect(g.fallos).toEqual([`${glm}:Error: zai_429`]);
+    });
+
+    it("los ids vacíos de la lista se saltan: sin respaldo, si falla GLM el día sale del banco", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL || url === GROQ_URL ? new Response("ocupado", { status: 429 }) : null));
+      const g = await generarDia(FECHA, { ...deps(), modelos: [glm, "", "  "] });
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL]);
+      expect(g.modelo).toBeNull();
+      expect(g.profecias.every((p) => p.origen === "banco")).toBe(true);
+      expect(g.fallos).toEqual([`${glm}:Error: zai_429`]);
+    });
+
+    it("sin key de Groq, si la cadena es solo de Z.ai, no hace falta", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), claves: { zai: "clave-zai" }, modelos: [glm] });
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL]);
+      expect(g.modelo).toBe(glm);
+      expect(g.fallos).toEqual([]);
+    });
+
+    it("sin key de Groq, un modelo de Groq falla sin llamar y la cadena sigue", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL || url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), claves: { zai: "clave-zai" }, modelos: ["openai/gpt-oss-120b", glm] });
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL]);
+      expect(g.modelo).toBe(glm);
+      expect(g.fallos).toEqual(["openai/gpt-oss-120b:Error: groq_sin_clave"]);
     });
 
     it("sin key de Z.ai no se la llama y la cadena sigue con el siguiente modelo", async () => {

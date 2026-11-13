@@ -39,7 +39,7 @@ const groq = usaGroq ? leerVariable(rutaGroq, "GROQ_API_KEY") : undefined;
 if (usaGroq && !groq) throw new Error(`No hay GROQ_API_KEY en ${rutaGroq}`);
 const zai = usaZai ? leerVariable(rutaZai, "ZAI_API_KEY") : undefined;
 if (usaZai && !zai) throw new Error(`No hay ZAI_API_KEY en ${rutaZai}`);
-const claves = { groq: groq ?? "", zai };
+const claves = { groq, zai };
 const zaiUrl = usaZai ? leerVariable(rutaZai, "ZAI_URL") : undefined;
 // La URL a la que van de verdad las peticiones de Z.ai, para medirlas (ver el fetch de abajo)
 const urlZai = zaiUrl || ZAI_URL;

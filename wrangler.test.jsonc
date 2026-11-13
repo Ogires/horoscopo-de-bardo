@@ -7,8 +7,8 @@
   "d1_databases": [{ "binding": "DB", "database_name": "horoscopo-de-bardo", "database_id": "test" }],
   "ratelimits": [{ "name": "RL", "namespace_id": "1003", "simple": { "limit": 1000, "period": 60 } }],
   "vars": {
-    "MODELO": "openai/gpt-oss-120b",
-    "MODELO_RESPALDO": "openai/gpt-oss-20b",
+    "MODELO": "zai:glm-5.3",
+    "MODELO_RESPALDO": "",
     "TELEGRAM_CANAL": "@canal_de_prueba",
     "FECHA_LANZAMIENTO": "2026-01-01",
     "URL_PUBLICA": "https://bardo.webninja.fyi",

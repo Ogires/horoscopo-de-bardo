@@ -24,16 +24,17 @@ interface RespuestaIa {
   matiz: string;
 }
 
+// Sin la key de un proveedor, sus modelos fallan sin llamar y la cadena sigue: solo hace falta la de
+// los proveedores que haya en la cadena
 export interface Claves {
-  groq: string;
-  /** Sin ella, los modelos zai: fallan sin llamar y la cadena sigue */
+  groq?: string;
   zai?: string;
 }
 
 export interface DepsGeneracion {
   /** La key de cada proveedor */
   claves: Claves;
-  /** En orden; los ids salen de vars, porque los modelos caducan */
+  /** En orden; los ids salen de vars (modelosDe), porque los modelos caducan. Los vacíos se saltan */
   modelos: string[];
   /** Textos de los últimos 14 días por signo, del más reciente al más antiguo */
   historial: Map<string, string[]>;
@@ -189,6 +190,14 @@ async function pedirALaIa(p: Peticion): Promise<{ profecias: RespuestaIa[]; toke
   return { profecias, tokens: cuerpo.usage?.total_tokens ?? 0 };
 }
 
+/**
+ * La cadena del cron: MODELO y, si no está vacío, MODELO_RESPALDO. Sin respaldo, si cae el
+ * principal, el día sale del banco
+ */
+export function modelosDe(env: { MODELO: string; MODELO_RESPALDO?: string }): string[] {
+  return [env.MODELO, env.MODELO_RESPALDO].map((m) => m?.trim() ?? "").filter(Boolean);
+}
+
 export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<DiaGenerado> {
   const sorteo = sortearDia(fecha);
   // Filtro de copias global: los 14 días de todos los signos y el banco entero, del que salen los
@@ -201,7 +210,7 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
   const descartadas: Descartada[] = [];
   let tokens = 0;
 
-  for (const modelo of deps.modelos) {
+  for (const modelo of deps.modelos.map((m) => m.trim()).filter(Boolean)) {
     try {
       const r = await pedirALaIa(peticionDelModelo(modelo, usuario, deps));
       tokens += r.tokens;
