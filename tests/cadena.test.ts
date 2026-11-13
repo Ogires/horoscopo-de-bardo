@@ -107,10 +107,12 @@ describe("generarDia", () => {
       expect(c.cuerpo.stream).toBeUndefined();
     });
 
-    it("con pensar, activan el razonamiento (thinking)", async () => {
+    it("con pensar, activan el razonamiento (thinking) con un tope de salida mayor", async () => {
       const llamadas = interceptar((url) => (url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
       await generarDia(FECHA, { ...deps(), modelos: [glm], pensar: true });
       expect(llamadas[0].cuerpo.thinking).toEqual({ type: "enabled" });
+      // Con 4.096, el razonamiento de GLM-4.7-Flash se los comió enteros dos veces y el JSON llegó vacío
+      expect(llamadas[0].cuerpo.max_tokens).toBe(16384);
     });
 
     it("los de Groq siguen yendo a Groq con su key y sin thinking", async () => {

@@ -12,8 +12,9 @@ export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 export const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 /** Un id de modelo con este prefijo va a Z.ai, sin el prefijo; el resto, a Groq */
 export const PREFIJO_ZAI = "zai:";
-// Fuera de los 8K tokens/minuto de Groq; con thinking, el razonamiento también sale de este tope
-export const TOPE_SALIDA_ZAI = 4096;
+// Fuera de los 8K tokens/minuto de Groq. Con thinking, el razonamiento sale del mismo tope: con 4.096,
+// GLM-4.7-Flash se los gastó enteros razonando dos días de tres y el JSON llegó vacío (fin length)
+export const TOPE_SALIDA_ZAI = { sinPensar: 4096, pensando: 16384 } as const;
 const MAX_MALAS = 3;
 
 interface RespuestaIa {
@@ -135,12 +136,13 @@ function peticionDelModelo(modelo: string, usuario: string, deps: DepsGeneracion
       proveedor: "zai",
       url: ZAI_URL,
       clave: deps.claves.zai,
-      // El modelo gratuito de Z.ai es más lento que Groq, y más si razona
-      espera: 120_000,
+      // El modelo gratuito de Z.ai es más lento que Groq (~60 tokens/s razonando): con el tope de
+      // pensar caben ~4,5 minutos. El cron tiene 15 minutos de reloj y no cuenta la espera como CPU
+      espera: deps.pensar ? 420_000 : 120_000,
       cuerpo: {
         model: modelo.slice(PREFIJO_ZAI.length),
         messages,
-        max_tokens: TOPE_SALIDA_ZAI,
+        max_tokens: deps.pensar ? TOPE_SALIDA_ZAI.pensando : TOPE_SALIDA_ZAI.sinPensar,
         temperature: 0.9,
         thinking: { type: deps.pensar ? "enabled" : "disabled" },
         // Z.ai solo tiene modo JSON, sin esquema: la forma va descrita al final de SISTEMA
