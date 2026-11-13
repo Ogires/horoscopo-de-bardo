@@ -26,6 +26,11 @@ describe("svgTarjeta", () => {
     expect(svg).toContain("<title");
   });
 
+  it("una cita dentro del texto va con comillas inglesas", () => {
+    const svg = svgTarjeta({ ...p, texto: "Nadie dirá «funciona en mi máquina» hoy." }, "2026-11-13", "claro", "h");
+    expect(svg).toContain("«Nadie dirá “funciona en mi máquina” hoy.»");
+  });
+
   it("la altura crece con el texto", () => {
     const corto = svgTarjeta({ ...p, texto: "x ".repeat(40).trim() }, "2026-11-13", "claro", "h");
     const largo = svgTarjeta({ ...p, texto: "palabra ".repeat(22).trim() }, "2026-11-13", "claro", "h");

@@ -1,6 +1,6 @@
 // tests/texto.test.ts
 import { describe, expect, it } from "vitest";
-import { aAscii, escapar } from "../src/texto";
+import { aAscii, entreComillas, escapar } from "../src/texto";
 
 describe("texto", () => {
   it("escapar cubre los cinco caracteres de HTML y XML", () => {
@@ -10,5 +10,10 @@ describe("texto", () => {
 
   it("aAscii quita tildes y lo que no cabe en una cabecera HTTP", () => {
     expect(aAscii("Evita: añadir más «unwrap()» 🦀")).toBe("Evita: anadir mas unwrap() ");
+  });
+
+  it("entreComillas usa comillas inglesas para las citas de dentro", () => {
+    expect(entreComillas("Un unwrap() «solo para probar» caerá.")).toBe("«Un unwrap() “solo para probar” caerá.»");
+    expect(entreComillas("Sin citas.")).toBe("«Sin citas.»");
   });
 });

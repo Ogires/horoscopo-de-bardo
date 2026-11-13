@@ -32,6 +32,13 @@ describe("páginas", () => {
     expect(h).not.toContain("archivo del Bardo");
   });
 
+  it("una cita dentro de la profecía no repite las comillas latinas", async () => {
+    const p = diaDelBanco(hoy).map((x) => ({ ...x, origen: "ia" as const }));
+    p[0] = { ...p[0], texto: "Un unwrap() que dejasteis «solo para probar» caerá en producción delante de todos." };
+    await insertarDia(hoy, { profecias: p });
+    expect(await html("/rust")).toContain("«Un unwrap() que dejasteis “solo para probar” caerá");
+  });
+
   it("avisa cuando la profecía sale del banco", async () => {
     await insertarDia(hoy, { profecias: diaDelBanco(hoy) });
     expect(await html("/rust")).toContain("Sacado del archivo del Bardo");

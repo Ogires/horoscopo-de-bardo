@@ -1,0 +1,479 @@
+/* Horóscopo de Bardo · pergamino y tinta, con el rojo lacre de acento.
+   Los colores son los mismos de la tarjeta SVG (COLORES en src/tarjeta.ts); un test lo comprueba.
+   Contraste AA comprobado: texto 14,5:1, suave 7,1:1 y acento 6,7:1 sobre el fondo claro;
+   14,9:1, 8,8:1 y 7,6:1 sobre el oscuro. */
+
+@font-face {
+  font-family: "IM Fell English";
+  src: url("/fuentes/im-fell-english-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --fondo: #f4ead5;
+  --superficie: #fbf6ea;
+  --borde: #b89f74;
+  --texto: #211912;
+  --suave: #5c4a35;
+  --acento: #9e1b1b;
+  --sobre-acento: #fbf6ea;
+  --sombra: rgb(60 40 15 / 0.1);
+  --titulos: "IM Fell English", Georgia, "Times New Roman", serif;
+  --cuerpo: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+  --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --ancho: 68rem;
+  --margen: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #16110c;
+    --superficie: #211a13;
+    --borde: #5a4834;
+    --texto: #efe4cc;
+    --suave: #c2b08e;
+    --acento: #ec8a76;
+    --sobre-acento: #16110c;
+    --sombra: rgb(0 0 0 / 0.35);
+  }
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --margen: 32px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--fondo);
+  background-image: radial-gradient(120% 50rem at 50% 0%, var(--superficie), transparent 70%);
+  background-repeat: no-repeat;
+  color: var(--texto);
+  font: 1.0625rem/1.6 var(--cuerpo);
+  overflow-wrap: break-word;
+}
+
+.cabecera,
+main,
+.pie {
+  width: 100%;
+  max-width: var(--ancho);
+  margin-inline: auto;
+  padding-inline: var(--margen);
+}
+
+main {
+  flex: 1;
+  padding-block: 2rem 1rem;
+}
+
+/* Tipografía */
+
+h1,
+h2,
+h3,
+.marca {
+  font-family: var(--titulos);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2.1rem, 1.5rem + 3vw, 3.4rem);
+  color: var(--acento);
+}
+
+h2 {
+  margin: 2.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 1.3rem + 1vw, 1.9rem);
+}
+
+h3 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.3rem;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--acento);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+code,
+pre {
+  font-family: var(--mono);
+}
+
+code {
+  font-size: 0.9em;
+}
+
+.emoji {
+  font-family: var(--emoji);
+  font-size: 0.85em;
+}
+
+/* Cabecera y pie */
+
+.saltar {
+  position: absolute;
+  left: var(--margen);
+  top: -10rem;
+  z-index: 1;
+  padding: 0.5rem 1rem;
+  background: var(--acento);
+  color: var(--sobre-acento);
+}
+
+.saltar:focus {
+  top: 0.5rem;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-block: 1.25rem 0.9rem;
+  border-bottom: 3px double var(--borde);
+}
+
+.marca {
+  font-size: 1.6rem;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.marca:hover {
+  color: var(--acento);
+}
+
+.cabecera nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.pie {
+  margin-top: 3rem;
+  padding-block: 1.5rem 2.5rem;
+  border-top: 1px solid var(--borde);
+  color: var(--suave);
+  font-size: 0.95rem;
+}
+
+.pie p {
+  margin: 0 0 0.5rem;
+  max-width: 44rem;
+}
+
+/* Portada y archivo */
+
+.entrada {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.entrada::after {
+  content: "";
+  display: block;
+  width: min(20rem, 70%);
+  height: 1px;
+  margin: 1.5rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--borde), transparent);
+}
+
+.fecha {
+  margin: 0;
+  color: var(--suave);
+  font-style: italic;
+}
+
+.lema {
+  margin: 0.75rem auto 0;
+  max-width: 34rem;
+}
+
+.rejilla {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+}
+
+.signo {
+  position: relative;
+  padding: 1rem 1.25rem 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px var(--sombra);
+}
+
+.signo h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.55rem;
+}
+
+.signo h2 a {
+  color: var(--texto);
+  text-decoration: none;
+}
+
+/* Toda la tarjeta es el enlace; el foco se ve alrededor de la tarjeta */
+.signo h2 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.signo:hover {
+  border-color: var(--acento);
+}
+
+.signo:hover h2 a {
+  color: var(--acento);
+}
+
+.signo:focus-within {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.signo h2 a:focus-visible {
+  outline: none;
+}
+
+.signo p {
+  margin: 0;
+}
+
+.archivo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.archivo [rel="next"] {
+  margin-left: auto;
+}
+
+/* Página de un signo */
+
+.profecia {
+  max-width: 44rem;
+}
+
+.profecia h1 {
+  margin-bottom: 0.25rem;
+}
+
+.profecia blockquote {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--superficie);
+  border-left: 4px solid var(--acento);
+  border-radius: 0 6px 6px 0;
+  font-family: var(--titulos);
+  font-size: clamp(1.4rem, 1.15rem + 1vw, 1.8rem);
+  line-height: 1.35;
+}
+
+.profecia blockquote p {
+  margin: 0;
+}
+
+.profecia dl {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.profecia dt {
+  color: var(--suave);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profecia dd {
+  margin: 0;
+}
+
+.origen {
+  color: var(--suave);
+  font-style: italic;
+}
+
+.readme {
+  max-width: 44rem;
+  margin-top: 3rem;
+  padding-top: 0.5rem;
+  border-top: 3px double var(--borde);
+}
+
+.readme h2 {
+  margin-top: 1.5rem;
+}
+
+.vista {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.25rem 0;
+}
+
+pre {
+  margin: 0 0 0.75rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.875rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+pre code {
+  font-size: inherit;
+}
+
+button {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.45rem 1.1rem;
+  color: var(--sobre-acento);
+  background: var(--acento);
+  border: 2px solid var(--acento);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  color: var(--fondo);
+  background: var(--texto);
+  border-color: var(--texto);
+}
+
+.estado {
+  min-height: 1.6em;
+  color: var(--suave);
+  font-style: italic;
+}
+
+.volver {
+  margin-top: 2.5rem;
+}
+
+/* Página de la API */
+
+.api {
+  max-width: 48rem;
+}
+
+.tabla {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--suave);
+  font-weight: 400;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+td code {
+  white-space: nowrap;
+}
+
+/* En móvil, cada fila de la tabla es un bloque: la ruta encima y lo que devuelve debajo */
+@media (max-width: 40rem) {
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .tabla tr,
+  .tabla td {
+    display: block;
+  }
+
+  .tabla tr {
+    padding-block: 0.6rem;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .tabla td {
+    padding: 0;
+    border: 0;
+  }
+
+  .tabla td:first-child {
+    font-weight: 700;
+  }
+}
+
+/* Avisos (404) */
+
+.aviso {
+  text-align: center;
+  padding-block: 3rem;
+}

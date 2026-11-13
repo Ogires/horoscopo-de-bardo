@@ -5,7 +5,7 @@ import { responder } from "../http/util";
 import { cacheControl, diaParaMostrar, type DiaLeido } from "../lectura";
 import { SIGNO_POR_SLUG } from "../signos";
 import { canalDe } from "../telegram";
-import { escapar as e } from "../texto";
+import { entreComillas, escapar as e } from "../texto";
 
 /** El repo público del proyecto, enlazado en el pie */
 const REPO = "https://github.com/Ogires/horoscopo-de-bardo";
@@ -55,7 +55,7 @@ function documento(env: Env, m: Marco): string {
 </head>
 <body>
 <a class="saltar" href="#contenido">Saltar al contenido</a>
-<header class="cabecera"><a class="marca" href="/"><span aria-hidden="true">🪕</span> Horóscopo de Bardo</a>
+<header class="cabecera"><a class="marca" href="/"><span class="emoji" aria-hidden="true">🪕</span> Horóscopo de Bardo</a>
 <nav aria-label="Principal"><a href="/api/">API</a>${telegram ? ` <a href="${e(telegram)}">Telegram</a>` : ""}</nav></header>
 <main id="contenido">${m.cuerpo}</main>
 <footer class="pie"><p>Cada noche, un bardo pesimista escribe el horóscopo de doce lenguajes de programación. Lo redacta una IA (GLM-5.3) y, si falla, tira de profecías escritas a mano.</p>
@@ -91,7 +91,7 @@ function cuerpoSigno(env: Env, dia: DiaLeido, slug: string): string {
   return `<article class="profecia">
 <h1><span class="emoji" aria-hidden="true">${s.emoji}</span> ${e(s.nombre)}</h1>
 <p class="fecha"><a href="/h/${dia.fecha}">${e(fechaLarga(dia.fecha))}</a></p>
-<blockquote><p>«${e(p.texto)}»</p></blockquote>
+<blockquote><p>${e(entreComillas(p.texto))}</p></blockquote>
 <dl>
 <div><dt>Puerto de la suerte</dt><dd>${p.puerto.numero} (${e(p.puerto.servicio)})</dd></div>
 <div><dt>Compatible con</dt><dd><a href="/${c.slug}">${e(c.nombre)}</a>, ${e(p.compatible.matiz)}</dd></div>

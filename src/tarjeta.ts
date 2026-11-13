@@ -5,7 +5,7 @@ import { diaDelBanco } from "./generar/banco";
 import { responder } from "./http/util";
 import { diaParaMostrar } from "./lectura";
 import { resolverSigno, SIGNO_POR_SLUG } from "./signos";
-import { escapar } from "./texto";
+import { entreComillas, escapar } from "./texto";
 import type { Profecia } from "./tipos";
 
 export type TemaTarjeta = "claro" | "oscuro" | "auto";
@@ -61,7 +61,7 @@ function estilos(tema: TemaTarjeta): string {
 export function svgTarjeta(p: Profecia, fecha: string, tema: TemaTarjeta, host: string): string {
   const signo = SIGNO_POR_SLUG.get(p.signo)!;
   const compatible = SIGNO_POR_SLUG.get(p.compatible.signo)!;
-  const texto = partirLineas(`«${p.texto}»`, CHARS_TEXTO);
+  const texto = partirLineas(entreComillas(p.texto), CHARS_TEXTO);
   const info = [
     `Puerto de la suerte: ${p.puerto.numero} (${p.puerto.servicio})`,
     `Compatible con: ${compatible.nombre}, ${p.compatible.matiz}`,

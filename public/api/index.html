@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API · Horóscopo de Bardo</title>
+<meta name="description" content="API pública del Horóscopo de Bardo: JSON sin clave, con CORS abierto y ETag. El horóscopo diario de doce lenguajes de programación.">
+<link rel="canonical" href="https://bardo.webninja.fyi/api/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Horóscopo de Bardo">
+<meta property="og:title" content="API · Horóscopo de Bardo">
+<meta property="og:description" content="JSON sin clave, con CORS abierto y ETag. El horóscopo diario de doce lenguajes de programación.">
+<meta property="og:url" content="https://bardo.webninja.fyi/api/">
+<meta property="og:image" content="https://bardo.webninja.fyi/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4ead5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16110c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fuentes/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera"><a class="marca" href="/"><span class="emoji" aria-hidden="true">🪕</span> Horóscopo de Bardo</a>
+<nav aria-label="Principal"><a href="/api/" aria-current="page">API</a></nav></header>
+<main id="contenido" class="api">
+<h1>La API del Bardo</h1>
+<p>Pública, sin clave y con CORS abierto (<code>Access-Control-Allow-Origin: *</code>). Devuelve JSON en UTF-8. El día es el de Madrid y cambia a medianoche: ninguna ruta enseña un día posterior a hoy.</p>
+
+<h2>Rutas</h2>
+<div class="tabla">
+<table>
+<thead><tr><th scope="col">Ruta</th><th scope="col">Devuelve</th></tr></thead>
+<tbody>
+<tr><td><code>GET /api/v1/signos</code></td><td>Los doce signos: slug, nombre, emoji y alias</td></tr>
+<tr><td><code>GET /api/v1/hoy</code></td><td>Las doce profecías de hoy</td></tr>
+<tr><td><code>GET /api/v1/signos/{signo}</code></td><td>La profecía de un signo hoy; con <code>?fecha=AAAA-MM-DD</code>, la de ese día</td></tr>
+<tr><td><code>GET /api/v1/dias/{fecha}</code></td><td>Un día completo del archivo</td></tr>
+</tbody>
+</table>
+</div>
+<p>Los signos son <code>rust</code>, <code>javascript</code>, <code>python</code>, <code>java</code>, <code>csharp</code>, <code>go</code>, <code>php</code>, <code>cobol</code>, <code>typescript</code>, <code>sql</code>, <code>kotlin</code> y <code>haskell</code>. Los alias (<code>js</code>, <code>ts</code>, <code>py</code>, <code>cs</code>, <code>rs</code>, <code>golang</code>, <code>kt</code>, <code>hs</code>, <code>c-sharp</code>) redirigen con un 308 al slug.</p>
+<p>La especificación completa está en <a href="/openapi.json">/openapi.json</a> (OpenAPI 3.1).</p>
+
+<h2>Ejemplos</h2>
+<p>Las doce profecías de hoy:</p>
+<pre><code>curl https://bardo.webninja.fyi/api/v1/hoy</code></pre>
+<p>La de un signo, con las cabeceras. Mira <code>X-Bardo-Consejo</code>:</p>
+<pre><code>curl -i https://bardo.webninja.fyi/api/v1/signos/rust</code></pre>
+<p>Responde algo así:</p>
+<pre><code>{
+  "fecha": "2026-12-01",
+  "signo": "rust",
+  "texto": "Hoy el compilador os hablará con crueldad, y tendrá razón. Un lifetime que creíais domado volverá a por vos antes de la comida.",
+  "puerto": { "numero": 8080, "servicio": "HTTP alternativo" },
+  "compatible": { "signo": "go", "matiz": "a regañadientes" },
+  "evita": "hacer clone() para callarlo",
+  "origen": "banco"
+}</code></pre>
+
+<h2>El campo <code>origen</code></h2>
+<p>Cada profecía dice de dónde sale:</p>
+<ul>
+<li><code>ia</code>: la escribió el modelo la víspera.</li>
+<li><code>banco</code>: sale del archivo del Bardo, escrito a mano. Pasa cuando la IA falla o cuando una profecía no pasa la validación.</li>
+</ul>
+
+<h2>Caché y ETag</h2>
+<p>Todas las respuestas llevan <code>ETag</code> y responden <code>304</code> si mandas <code>If-None-Match</code> y nada ha cambiado.</p>
+<ul>
+<li>Hoy: <code>max-age</code> hasta la medianoche de Madrid, como mucho una hora.</li>
+<li>Días pasados: un día.</li>
+<li>Si hoy sale del archivo porque falta el día: 60 segundos.</li>
+</ul>
+
+<h2>Errores</h2>
+<p>En JSON y con la voz del Bardo: <code>{ "error": "signo_desconocido", "mensaje": "…" }</code>.</p>
+<div class="tabla">
+<table>
+<thead><tr><th scope="col">Código</th><th scope="col">Estado</th><th scope="col">Cuándo</th></tr></thead>
+<tbody>
+<tr><td><code>signo_desconocido</code></td><td>404</td><td>El signo no es de los doce</td></tr>
+<tr><td><code>fecha_invalida</code></td><td>400</td><td>La fecha no es AAAA-MM-DD</td></tr>
+<tr><td><code>fuera_de_rango</code></td><td>404</td><td>Una fecha futura o anterior al lanzamiento</td></tr>
+<tr><td><code>ruta_desconocida</code></td><td>404</td><td>La ruta no existe</td></tr>
+<tr><td><code>metodo</code></td><td>405</td><td>Solo se admiten GET, HEAD y OPTIONS</td></tr>
+<tr><td><code>demasiadas</code></td><td>429</td><td>Demasiadas peticiones seguidas; vuelve al cabo de <code>Retry-After</code> segundos</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>La tarjeta para tu README</h2>
+<p><code>GET /tarjeta/{signo}.svg</code> devuelve la profecía de hoy en una tarjeta SVG de 495 px de ancho. Con <code>?tema=claro</code> u <code>?tema=oscuro</code> fija los colores; sin él, sigue al sistema. El fragmento listo para copiar está en la página de cada signo, por ejemplo <a href="/rust">la de Rust</a>.</p>
+</main>
+<footer class="pie"><p>Cada noche, un bardo pesimista escribe el horóscopo de doce lenguajes de programación. Lo redacta una IA (GLM-5.3) y, si falla, tira de profecías escritas a mano.</p>
+<p><a href="https://github.com/Ogires/horoscopo-de-bardo">Código fuente</a> · <a href="/api/">API pública</a> · Sin cookies ni rastreo</p></footer>
+</body>
+</html>
