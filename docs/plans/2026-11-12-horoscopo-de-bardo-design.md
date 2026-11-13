@@ -40,7 +40,7 @@ Un único Worker de Cloudflare con assets, como el resto de la factoría.
 
 ```
             ┌──────────── Worker horoscopo-de-bardo ─────────────┐
- cron ────► │ scheduled: generar(mañana) ─► Groq ─► validar ─► D1 │
+ cron ────► │ scheduled: generar(mañana) ─► Z.ai ─► validar ─► D1 │
             │            publicar(hoy) ──────────────► Telegram   │
             │                                                     │
  visitas ─► │ fetch: web SSR · /api/v1/* · /tarjeta/*.svg ◄── D1  │
@@ -79,7 +79,7 @@ src/
   signos.ts            los doce signos (slug, nombre, emoji, alias)
   generar/
     prompt.ts          prompt del sistema y del día
-    cadena.ts          gpt-oss-120b → gpt-oss-20b → banco
+    cadena.ts          GLM-5.3 (Z.ai) → banco
     validar.ts         longitudes, palabras vetadas, repeticiones
     sorteo.ts          gancho, puerto y compatible deterministas por fecha
     banco.ts           elección determinista del banco
@@ -104,7 +104,7 @@ Una fila por día:
 CREATE TABLE dias (
   fecha        TEXT PRIMARY KEY,   -- 'AAAA-MM-DD', día de Madrid
   profecias    TEXT NOT NULL,      -- JSON: 12 objetos (ver abajo)
-  modelo       TEXT,               -- 'gpt-oss-120b' | 'gpt-oss-20b' | NULL si todo es del banco
+  modelo       TEXT,               -- id del modelo ('zai:glm-5.3') | NULL si todo es del banco
   creado_ms    INTEGER NOT NULL,
   telegram_ms  INTEGER             -- NULL: sin publicar · -1: publicando · >0: publicado
 );
@@ -141,10 +141,11 @@ La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»** (
 
 ### 5.2 La llamada
 
-- **Una sola llamada al día** con los doce signos. Modelo `openai/gpt-oss-120b` en Groq, con `reasoning_effort: low`. Si falla, `openai/gpt-oss-20b`. Los ids de los modelos van en `vars`, porque los modelos de Groq caducan.
-- **Salida con `response_format` de tipo `json_schema` y `strict: true`**, que Groq admite en los dos modelos: la respuesta siempre cumple el esquema. Sin streaming, que no es compatible con este modo.
+- **Una sola llamada al día** con los doce signos, al modelo **GLM-5.3 de Z.ai**, con `thinking` activado y `reasoning_effort: low`: este modelo siempre razona y, sin pedirle otra cosa, lo hace al máximo; con `low` le bastan unas decenas de tokens. El id del modelo va en `vars` (`zai:glm-5.3`; el prefijo `zai:` manda la llamada a Z.ai), porque los modelos caducan. La llamada tarda unos 20 segundos, y la espera de red no cuenta como CPU del cron.
+- **Si falla, el banco** (sección 5.6). La cadena admite un modelo de respaldo, pero va vacío. Se probaron `openai/gpt-oss-120b` y `openai/gpt-oss-20b` en Groq y se descartaron: inventaban hechos técnicos que no estaban en el gancho y su español no llegaba al nivel del banco. Con el mismo prompt, GLM-5.3 escribió unas 29 profecías publicables de 36, y gpt-oss-120b, 5.
+- **Salida en modo JSON** (`response_format` de tipo `json_object`), sin esquema impuesto: Z.ai no lo admite. El prompt del sistema acaba con la forma exacta del JSON y el Worker la comprueba (sección 5.4). Sin streaming.
 - **Contexto para no repetirse:** para cada signo, el gancho y el compatible sorteados y los textos de los **tres días anteriores** que escribió la IA, con la instrucción de no repetir ni la idea ni el giro. Lo que salió del banco no vuelve al prompt (el modelo lo parafrasea), aunque sí está en el filtro de copias.
-- **Coste estimado:** unos 2.900 tokens de entrada y 1.600 de salida: unos 4.500 por llamada.
+- **Tamaño de la llamada:** unos 3.200-3.700 tokens de entrada y unos 1.000 de salida, razonamiento incluido: unos 4.500 por llamada.
 
 ### 5.3 El prompt del sistema (resumen)
 
@@ -157,12 +158,12 @@ La IA escribe solo **el texto, el «Evita» y el matiz de «Compatible con»** (
 - **«Evita» y el matiz:** «Evita» es lo que conviene evitar hoy, en infinitivo y sin «no» delante, porque se lee tras la etiqueta («Evita: hacer clone() para callarlo»). El matiz cuenta, con gracia y sin faltar a la verdad, cómo o por qué se llevan los dos lenguajes, en **dos a cinco palabras**, sin nombrar ningún lenguaje, porque se lee detrás del nombre del compatible («Go, a regañadientes»), y varía de forma: «a regañadientes», «solo los viernes», «por miedo», «para discutir de tipos», «que también sabe hacer die()». Como mucho tres matices del día empiezan por «que también».
 - **Nunca:** personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, frontend, QA…); política, religión, salud, dinero real ni despidos; palabrotas; enlaces; emojis (los pone el código); el carácter `@`, tampoco en anotaciones o decoradores.
 - **Ejemplos de tono:** el prompt lleva cuatro ejemplos completos (gancho, texto, «Evita», compatible y matiz) con la longitud pedida, arranques distintos (uno con subordinada) y remates de formas distintas (giro, consecuencia, resignación) que no añaden hechos técnicos al gancho, ninguno con una fórmula de juglar al principio. Sus ganchos no están en `data/ganchos.json` y sus textos no están en el banco. Son solo para el tono: el prompt pide que no se copien, y el filtro de copias los vigila (sección 5.4).
-- **Longitudes:** el prompt pide el texto y el matiz **en palabras**, porque el modelo no cuenta caracteres: cuando se le pedían textos de 100 a 150 caracteres salían de 170 a 235, y cuando se le pedían matices de 40 como mucho, la mayoría se pasaban. El texto, entre 18 y 26 palabras (las del banco van de 17 a 26); el matiz, de dos a cinco; «Evita», de 60 caracteres como mucho. El validador sigue contando caracteres: acepta textos de 80 a 180, para no tirar una buena profecía por unos caracteres, y matices de 3 a 40. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
-- **Tamaño:** el prompt y el mensaje del día se mantienen en unos 2.600 tokens de entrada con dos días de historial, para que la entrada más el tope de salida quepan en los 8K tokens por minuto de Groq.
+- **Longitudes:** el prompt pide el texto y el matiz **en palabras**, porque el modelo no cuenta caracteres: cuando se le pedían textos de 100 a 150 caracteres salían de 170 a 235, y cuando se le pedían matices de 40 como mucho, la mayoría se pasaban. El texto, dos frases y como mucho 24 palabras, con unos 150 caracteres de referencia (las del banco van de 17 a 26 palabras): cuando se le pedían entre 18 y 26, el modelo escribía de 25 a 32 y se pasaba del tope. El matiz, de dos a cinco palabras; «Evita», de 60 caracteres como mucho. El validador sigue contando caracteres: acepta textos de 80 a 180, para no tirar una buena profecía por unos caracteres, y matices de 3 a 40. Las profecías cortas tienen más gracia y caben en tres líneas de la tarjeta.
+- **Tamaño:** con dos días de historial, el prompt y el mensaje del día rondan los 3.700 tokens de entrada.
 
 ### 5.4 Validación
 
-El esquema lo garantiza `strict: true`, pero el Worker vuelve a comprobarlo (los doce signos, sin repetir ni faltar). Después, cada profecía pasa por:
+Como Z.ai no impone el esquema, el Worker comprueba la forma: un JSON legible (también si llega dentro de un bloque de código) con el array `profecias`. Sin eso, o con un signo repetido, se descarta la respuesta entera. Un elemento sin los cuatro campos de texto o con un signo que no es de los doce se ignora, y su signo cuenta como fallido. Después, cada profecía pasa por:
 1. **Longitudes** de la sección 5.3.
 2. **Lista de palabras vetadas** (insultos y temas sensibles) y nada de URLs ni menciones `@`.
 3. **«Evita» sin «no»:** si empieza por «no», se descarta, porque tras la etiqueta se leería al revés.
@@ -170,7 +171,7 @@ El esquema lo garantiza `strict: true`, pero el Worker vuelve a comprobarlo (los
 
 **Matiz de reserva:** si lo único que falla de una profecía es la longitud del matiz, no se descarta. Se quedan el texto y el «Evita» de la IA, y el matiz sale de una lista fija de diez matices genéricos (`data/matices.json`: «a regañadientes», «con reservas», «sin mirarse a la cara»…), elegido por un hash de la fecha y el signo, así que el mismo día da siempre el mismo. El resto de la validación se repite con el matiz nuevo. No cuenta como fallo: queda apuntado como `matiz_reserva`, junto con el matiz que se tiró, para revisar el prompt.
 
-Si fallan **3 signos o menos**, esos salen del banco. Si fallan más, se descarta la respuesta y se prueba el siguiente modelo.
+Si fallan **3 signos o menos**, esos salen del banco. Si fallan más, se descarta la respuesta y se prueba el modelo de respaldo, si lo hay; sin él, el día sale entero del banco.
 
 ### 5.5 Sin moderador
 
@@ -255,14 +256,14 @@ Y, como alternativa, una línea de Markdown: `[![Horóscopo de Bardo: Rust](http
 
 ## 10. Coste y topes
 
-| Recurso | Uso | Límite gratis |
+| Recurso | Uso | Límite gratis o coste |
 |---|---|---|
-| Groq, LLM | 1 llamada al día (~4.500 tokens); como mucho 2 por modelo si falla la primera | 200K tokens/día por modelo y organización, ya repartidos |
+| Z.ai, GLM-5.3 | 1 llamada al día (~4.500 tokens); otra en el reintento de las 22:00 solo si falla la primera | Sin capa gratuita: se paga por token, unos céntimos al mes |
 | Cron Triggers | 1 expresión | 5 por cuenta; 10 ms de CPU por ejecución, sin contar la espera de red |
 | D1 | 1 escritura al día; 1-2 lecturas por petición | 5M filas leídas y 100K escritas al día |
 | Workers | Las visitas y las revalidaciones de Camo (casi todas 304) | 100K peticiones al día |
 
-**Reparto de Groq:** este Worker reserva 10K tokens al día por modelo (dos llamadas con margen). Interview Fight Club baja de 200K a 90K por modelo y Habla con mi Portfolio sigue en 100K: entre los tres suman los 200K de cada modelo. El tope sale de la arquitectura: solo el cron llama a la IA, así que no hace falta un contador.
+**Sin cupos compartidos:** no usa Groq, así que no reserva cupo ni toca el de las otras apps de la factoría. El tope sale de la arquitectura: solo el cron llama a la IA, como mucho dos veces al día, así que no hace falta un contador.
 
 ## 11. Seguridad
 
@@ -272,7 +273,7 @@ Según OWASP Top 10 2025 y OWASP LLM Top 10 2025:
 - **LLM05, manejo de la salida:** validación de la sección 5.4 y escape según el destino: HTML, XML (SVG), HTML de Telegram y JSON.
 - **LLM10, consumo sin límite:** solo el cron llama a la IA (sección 10).
 - **Cabeceras:** CSP estricta en el HTML (sin scripts en línea; el botón de copiar va en un fichero), `X-Content-Type-Options: nosniff` y `Referrer-Policy`.
-- **Secretos:** `GROQ_API_KEY`, `TELEGRAM_BOT_TOKEN` y el chat del administrador, como secrets del Worker. El nombre del canal, que es público, va en `vars`.
+- **Secretos:** `ZAI_API_KEY`, `TELEGRAM_BOT_TOKEN` y el chat del administrador, como secrets del Worker. El nombre del canal, que es público, va en `vars`.
 - **Privacidad:** sin cookies, sin cuentas y sin datos personales. No se guardan IPs.
 
 ## 12. Pruebas y verificación
@@ -282,7 +283,7 @@ Según OWASP Top 10 2025 y OWASP LLM Top 10 2025:
 - **Fechas:** día de Madrid y fecha objetivo en las cuatro horas del cron, en invierno, en verano y en los cambios de hora de marzo y octubre. Ninguna ruta sirve una fecha posterior a hoy.
 - **Sorteo y banco:** deterministas por fecha; cada signo recibe un gancho suyo, y sus quince sin repetir en cada ciclo de quince días; el compatible nunca es el propio signo. Contenido de `data/ganchos.json`: 15 por signo, distintos, de 90 caracteres como mucho, sin `@` ni enlaces.
 - **Validación:** signo que falta o se repite, longitudes, palabras vetadas, URLs, «Evita» que empieza por «no» y repeticiones de 6 palabras con otros signos, el banco y el propio día.
-- **Cadena:** 120b → 20b → banco, con `fetch` parcheado; el matiz de reserva cuando solo falla su longitud, y los parámetros de cada modelo (razonamiento y `strict`).
+- **Cadena:** modelo → respaldo, si lo hay → banco, con `fetch` parcheado; la forma del JSON de Z.ai (bloque de código, campos que faltan, signos desconocidos o repetidos); el matiz de reserva cuando solo falla su longitud, y los parámetros de cada proveedor (razonamiento, modo JSON y URL).
 - **Cron:** idempotencia de las cuatro horas, sin duplicar el día ni el mensaje; reserva de Telegram con fallo antes y después de enviar; avisos al administrador.
 - **Salida:** escape en HTML, SVG y Telegram con textos maliciosos; partición de líneas y altura de la tarjeta; el mensaje de Telegram con los doce textos al máximo cabe.
 - **API:** rutas, alias, errores, CORS, métodos, `ETag` y 304, cabeceras de caché (también la de 60 s del banco) y que `openapi.json` coincide con las rutas.
