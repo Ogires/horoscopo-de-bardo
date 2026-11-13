@@ -13,6 +13,18 @@ describe("andamiaje", () => {
     expect(env.ZAI_API_KEY).toBeTruthy();
   });
 
+  // wrangler carga el .dev.vars local (con las keys reales) encima de las vars de wrangler.test.jsonc.
+  // Se compara con === para que un fallo no imprima el secreto
+  it.each([
+    ["GROQ_API_KEY", "clave-de-prueba"],
+    ["ZAI_API_KEY", "clave-zai-de-prueba"],
+    ["ZAI_URL", ""],
+    ["TELEGRAM_BOT_TOKEN", "token-de-prueba"],
+    ["TELEGRAM_AVISOS", "42"],
+  ])("%s es el de mentira aunque haya un .dev.vars", (nombre, valor) => {
+    expect((env as unknown as Record<string, unknown>)[nombre] === valor).toBe(true);
+  });
+
   it("tiene la tabla dias", async () => {
     const fila = await env.DB.prepare("SELECT COUNT(*) AS n FROM dias").first<{ n: number }>();
     expect(fila?.n).toBe(0);

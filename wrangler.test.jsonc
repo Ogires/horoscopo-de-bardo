@@ -1,4 +1,4 @@
-// Config SOLO para Vitest: sin dominio ni cron, secretos de mentira
+// Config SOLO para Vitest: sin dominio ni cron
 {
   "name": "horoscopo-de-bardo-test",
   "main": "src/index.ts",
@@ -11,10 +11,7 @@
     "MODELO_RESPALDO": "",
     "TELEGRAM_CANAL": "@canal_de_prueba",
     "FECHA_LANZAMIENTO": "2026-01-01",
-    "URL_PUBLICA": "https://bardo.webninja.fyi",
-    "GROQ_API_KEY": "clave-de-prueba",
-    "ZAI_API_KEY": "clave-zai-de-prueba",
-    "TELEGRAM_BOT_TOKEN": "token-de-prueba",
-    "TELEGRAM_AVISOS": "42"
+    "URL_PUBLICA": "https://bardo.webninja.fyi"
   }
+  // Los secretos de mentira van en vitest.config.ts: así ganan al .dev.vars local
 }
