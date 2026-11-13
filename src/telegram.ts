@@ -4,6 +4,15 @@ import { SIGNO_POR_SLUG } from "./signos";
 import { escapar } from "./texto";
 import type { Profecia } from "./tipos";
 
+/** El valor de TELEGRAM_CANAL mientras el canal no existe */
+export const CANAL_PENDIENTE = "@pendiente";
+
+/** El canal de TELEGRAM_CANAL, o null si aún no existe (vacío o @pendiente) */
+export function canalDe(valor: string | undefined): string | null {
+  const canal = valor?.trim() ?? "";
+  return canal && canal !== CANAL_PENDIENTE ? canal : null;
+}
+
 // parse_mode HTML: todo lo que no es etiqueta propia va escapado
 export function textoTelegram(fecha: string, profecias: Profecia[], urlPublica: string): string {
   const bloques = profecias.map((p) => {
