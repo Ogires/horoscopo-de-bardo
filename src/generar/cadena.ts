@@ -1,4 +1,5 @@
 // src/generar/cadena.ts — los modelos de la cadena, en orden (Groq, o Z.ai con el prefijo zai:) → banco
+import { SLUGS } from "../signos";
 import type { Profecia } from "../tipos";
 import { matizDeReserva, profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
 import { ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
@@ -11,7 +12,7 @@ export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 export const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 /** Un id de modelo con este prefijo va a Z.ai, sin el prefijo; el resto, a Groq */
 export const PREFIJO_ZAI = "zai:";
-// Z.ai no tiene los 8K tokens/minuto de Groq; con thinking, el razonamiento también sale de aquí
+// Fuera de los 8K tokens/minuto de Groq; con thinking, el razonamiento también sale de este tope
 export const TOPE_SALIDA_ZAI = 4096;
 const MAX_MALAS = 3;
 
@@ -88,6 +89,33 @@ function opcionesDelModelo(modelo: string, esfuerzo: Esfuerzo): OpcionesModelo {
   return { strict: false, tope: TOPE_SALIDA[esfuerzo], razonamiento: {} };
 }
 
+const CAMPOS = ["signo", "texto", "evita", "matiz"] as const;
+// Un bloque de código Markdown alrededor del JSON, que algunos modelos ponen aunque estén en modo JSON
+const RE_BLOQUE = /^```[\w-]*\s*([\s\S]*?)\s*```$/;
+
+// Z.ai no impone el esquema, así que la forma se comprueba aquí (con Groq y strict, ya la cumple).
+// Sin JSON legible o sin array de profecías, falla el modelo y la cadena sigue; un elemento sin los
+// cuatro campos de texto o con un signo que no es de los doce se ignora, y su signo cuenta como falta
+function leerProfecias(contenido: unknown): RespuestaIa[] {
+  if (typeof contenido !== "string") throw new Error("json_invalido");
+  const bloque = RE_BLOQUE.exec(contenido.trim());
+  let datos: unknown;
+  try {
+    datos = JSON.parse(bloque ? bloque[1] : contenido);
+  } catch {
+    throw new Error("json_invalido");
+  }
+  const lista = (datos as { profecias?: unknown } | null)?.profecias;
+  if (!Array.isArray(lista)) throw new Error("sin_profecias");
+  return lista.filter(
+    (p): p is RespuestaIa =>
+      typeof p === "object" &&
+      p !== null &&
+      CAMPOS.every((c) => typeof (p as Record<string, unknown>)[c] === "string") &&
+      SLUGS.has((p as RespuestaIa).signo),
+  );
+}
+
 interface Peticion {
   proveedor: "groq" | "zai";
   url: string;
@@ -148,8 +176,8 @@ async function pedirALaIa(p: Peticion): Promise<{ profecias: RespuestaIa[]; toke
     body: JSON.stringify(p.cuerpo),
   });
   if (!r.ok) throw new Error(`${p.proveedor}_${r.status}`);
-  const cuerpo = await r.json<{ choices: { message: { content: string } }[]; usage?: { total_tokens?: number } }>();
-  const { profecias } = JSON.parse(cuerpo.choices[0].message.content) as { profecias: RespuestaIa[] };
+  const cuerpo = await r.json<{ choices?: { message?: { content?: unknown } }[]; usage?: { total_tokens?: number } }>();
+  const profecias = leerProfecias(cuerpo.choices?.[0]?.message?.content);
   const signos = profecias.map((p) => p.signo);
   if (new Set(signos).size !== signos.length) throw new Error("signos_repetidos");
   return { profecias, tokens: cuerpo.usage?.total_tokens ?? 0 };

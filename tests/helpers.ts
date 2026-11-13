@@ -48,8 +48,11 @@ export function profeciasIa(fecha: string, cambios: Record<string, Parcial> = {}
   }));
 }
 
-export const respuestaGroq = (profecias: unknown[], tokens = 4500) =>
-  Response.json({ choices: [{ message: { content: JSON.stringify({ profecias }) } }], usage: { total_tokens: tokens } });
+// El contenido tal cual lo devolvería el modelo: con Z.ai no hay esquema que lo garantice
+export const respuestaTexto = (contenido: string | null, tokens = 4500) =>
+  Response.json({ choices: [{ message: { content: contenido } }], usage: { total_tokens: tokens } });
+
+export const respuestaGroq = (profecias: unknown[], tokens = 4500) => respuestaTexto(JSON.stringify({ profecias }), tokens);
 
 export async function insertarDia(fecha: string, o: { profecias?: Profecia[]; modelo?: string | null; telegram_ms?: number | null } = {}) {
   const profecias = o.profecias ?? diaDelBanco(fecha).map((p) => ({ ...p, origen: "ia" as const }));

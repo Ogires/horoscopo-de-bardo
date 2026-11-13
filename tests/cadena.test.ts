@@ -5,7 +5,7 @@ import { matizDeReserva } from "../src/generar/banco";
 import { generarDia } from "../src/generar/cadena";
 import { ejemplosDelDia, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
-import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch, ZAI_URL } from "./helpers";
+import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, respuestaTexto, restaurarFetch, ZAI_URL } from "./helpers";
 
 const FECHA = "2026-11-13";
 const deps = (historial = new Map<string, string[]>()) => ({
@@ -138,6 +138,89 @@ describe("generarDia", () => {
       expect(llamadas.map((l) => l.url)).toEqual([GROQ_URL]);
       expect(g.modelo).toBe("openai/gpt-oss-120b");
       expect(g.fallos).toEqual([`${glm}:Error: zai_sin_clave`]);
+    });
+  });
+
+  describe("forma de la respuesta: Z.ai no impone el esquema", () => {
+    const glm = "zai:glm-4.7-flash";
+    const gpt = "openai/gpt-oss-120b";
+    const conRespaldo = () => ({ ...deps(), modelos: [glm, gpt] });
+    // Z.ai devuelve el contenido dado; Groq, de respaldo, doce profecías buenas
+    const servir = (contenido: string | null) =>
+      interceptar((url) => {
+        if (url === ZAI_URL) return respuestaTexto(contenido);
+        return url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null;
+      });
+    const json = (profecias: unknown) => JSON.stringify({ profecias });
+
+    const valla = "```";
+    it.each([
+      ["```json … ```", (j: string) => `${valla}json\n${j}\n${valla}`],
+      ["``` … ```", (j: string) => `${valla}\n${j}\n${valla}`],
+      ["con espacios alrededor", (j: string) => `\n  ${valla}json\n${j}\n${valla}  \n`],
+    ])("acepta el JSON envuelto en un bloque de código Markdown (%s)", async (_, envolver) => {
+      servir(envolver(json(profeciasIa(FECHA))));
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(g.modelo).toBe(glm);
+      expect(g.profecias.every((p) => p.origen === "ia")).toBe(true);
+      expect(g.fallos).toEqual([]);
+    });
+
+    it("un elemento sin los cuatro campos de texto cuenta como falta para su signo", async () => {
+      const ia: Record<string, unknown>[] = profeciasIa(FECHA);
+      const cambiar = (signo: string, f: (p: Record<string, unknown>) => Record<string, unknown>) => {
+        const i = ia.findIndex((p) => p.signo === signo);
+        ia[i] = f(ia[i]);
+      };
+      cambiar("rust", (p) => ({ ...p, texto: 42 }));
+      cambiar("go", ({ matiz, ...resto }) => resto);
+      cambiar("sql", (p) => ({ ...p, evita: null }));
+      servir(json(ia));
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(g.modelo).toBe(glm);
+      expect(g.profecias.filter((p) => p.origen === "banco").map((p) => p.signo).sort()).toEqual(["go", "rust", "sql"]);
+      expect([...g.fallos].sort()).toEqual([`${glm}:go:falta`, `${glm}:rust:falta`, `${glm}:sql:falta`]);
+    });
+
+    it("un signo que no es uno de los doce se ignora y el suyo cuenta como falta", async () => {
+      const ia = profeciasIa(FECHA).map((p) => (p.signo === "rust" ? { ...p, signo: "Rust" } : p.signo === "php" ? { ...p, signo: "ruby" } : p));
+      servir(json(ia));
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(g.modelo).toBe(glm);
+      expect(g.profecias.filter((p) => p.origen === "banco").map((p) => p.signo).sort()).toEqual(["php", "rust"]);
+      expect([...g.fallos].sort()).toEqual([`${glm}:php:falta`, `${glm}:rust:falta`]);
+    });
+
+    it("los elementos que no son objetos se ignoran", async () => {
+      servir(json([null, "rust", 7, ["go"], ...profeciasIa(FECHA)]));
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(g.modelo).toBe(glm);
+      expect(g.profecias.every((p) => p.origen === "ia")).toBe(true);
+    });
+
+    it.each([
+      ["otra clave", JSON.stringify({ horoscopo: profeciasIa(FECHA) })],
+      ["profecias que no es un array", JSON.stringify({ profecias: { rust: profeciasIa(FECHA)[0] } })],
+      ["un array suelto", JSON.stringify(profeciasIa(FECHA))],
+      ["null", "null"],
+    ])("sin el array profecias (%s), falla el modelo y se pasa al siguiente", async (_, contenido) => {
+      const llamadas = servir(contenido);
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL, GROQ_URL]);
+      expect(g.modelo).toBe(gpt);
+      expect(g.fallos).toEqual([`${glm}:Error: sin_profecias`]);
+    });
+
+    it.each([
+      ["cortado", '{"profecias": [{"signo": "rust", "texto": "Bastará un'],
+      ["texto suelto", "Aquí tenéis el horóscopo de hoy."],
+      ["vacío", ""],
+      ["null", null],
+    ])("si el JSON no se puede leer (%s), falla el modelo y se pasa al siguiente", async (_, contenido) => {
+      servir(contenido);
+      const g = await generarDia(FECHA, conRespaldo());
+      expect(g.modelo).toBe(gpt);
+      expect(g.fallos).toEqual([`${glm}:Error: json_invalido`]);
     });
   });
 
