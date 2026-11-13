@@ -21,6 +21,15 @@ describe("motivoInvalida", () => {
     expect(motivoInvalida(con({ compatible: { signo: "go", matiz: "x".repeat(41) } }), "rust")).toBe("longitud_matiz");
   });
 
+  it("el texto acaba con un signo de cierre: si no, llegó cortado", () => {
+    // Visto con GLM-5.3: «…y os dolerá más que elmaintenance»
+    const cortado = "Descubriréis un nivel 88 que nombra lo que escribisteis durante años. Nadie os lo había contado, y os dolerá más que elmaintenance";
+    expect(motivoInvalida(con({ texto: cortado }), "rust")).toBe("texto_cortado");
+    for (const fin of [".", "!", "?", "…", "».", "»", '"']) {
+      expect(motivoInvalida(con({ texto: `${cortado.slice(0, -14)}la lluvia${fin}` }), "rust")).toBeNull();
+    }
+  });
+
   it("«Evita» va en positivo: si empieza por «no» se leería al revés", () => {
     expect(motivoInvalida(con({ evita: "no confíes en logs vacíos" }), "rust")).toBe("evita_negada");
     expect(motivoInvalida(con({ evita: "No ignores los warnings" }), "rust")).toBe("evita_negada");

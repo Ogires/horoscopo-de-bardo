@@ -28,6 +28,8 @@ const largo = (s: string, [min, max]: readonly [number, number]) => {
 
 export function motivoInvalida(p: Candidata, signo: string): string | null {
   if (!largo(p.texto, LIMITES.texto)) return "longitud_texto";
+  // Un texto sin signo de cierre llegó cortado (visto con GLM-5.3: «…más que elmaintenance»)
+  if (!/[.!?…»"]$/u.test(p.texto.trim())) return "texto_cortado";
   if (!largo(p.evita, LIMITES.evita)) return "longitud_evita";
   if (!largo(p.compatible.matiz, LIMITES.matiz)) return "longitud_matiz";
   // Se lee tras la etiqueta «Evita:», así que «no confíes…» diría lo contrario
