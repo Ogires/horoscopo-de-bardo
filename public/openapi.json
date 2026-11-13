@@ -1,0 +1,107 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Horóscopo de Bardo",
+    "version": "1.0.0",
+    "description": "El horóscopo diario de doce lenguajes de programación, escrito por un bardo pesimista. Sin clave y con CORS abierto. El día es el de Madrid y cambia a medianoche: ninguna ruta enseña un día posterior a hoy. Todas las respuestas llevan ETag y responden 304 si no han cambiado."
+  },
+  "servers": [{ "url": "https://bardo.webninja.fyi" }],
+  "paths": {
+    "/api/v1/signos": {
+      "get": {
+        "summary": "Los doce signos",
+        "responses": {
+          "200": {
+            "description": "Signos con su slug, nombre, emoji y alias",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "signos": { "type": "array", "items": { "$ref": "#/components/schemas/Signo" } } } } } }
+          },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/hoy": {
+      "get": {
+        "summary": "Las doce profecías de hoy",
+        "responses": { "200": { "$ref": "#/components/responses/Dia" }, "429": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/v1/signos/{signo}": {
+      "get": {
+        "summary": "La profecía de un signo",
+        "parameters": [
+          { "name": "signo", "in": "path", "required": true, "description": "Slug o alias (js, ts, py, cs…). Un alias redirige con 308 al slug.", "schema": { "type": "string" } },
+          { "name": "fecha", "in": "query", "required": false, "description": "Día del archivo (AAAA-MM-DD). Por defecto, hoy.", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Una profecía",
+            "headers": { "X-Bardo-Consejo": { "$ref": "#/components/headers/Consejo" } },
+            "content": { "application/json": { "schema": { "allOf": [{ "type": "object", "properties": { "fecha": { "type": "string", "format": "date" } } }, { "$ref": "#/components/schemas/Profecia" }] } } }
+          },
+          "308": { "description": "Alias: redirige al slug" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/dias/{fecha}": {
+      "get": {
+        "summary": "Un día completo del archivo",
+        "parameters": [{ "name": "fecha", "in": "path", "required": true, "description": "AAAA-MM-DD, desde el lanzamiento hasta hoy", "schema": { "type": "string", "format": "date" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Dia" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "headers": {
+      "Consejo": { "description": "Un consejo del Bardo para hoy, en ASCII", "schema": { "type": "string" } }
+    },
+    "schemas": {
+      "Signo": {
+        "type": "object",
+        "properties": { "slug": { "type": "string" }, "nombre": { "type": "string" }, "emoji": { "type": "string" }, "alias": { "type": "array", "items": { "type": "string" } } }
+      },
+      "Puerto": { "type": "object", "properties": { "numero": { "type": "integer" }, "servicio": { "type": "string" } } },
+      "Profecia": {
+        "type": "object",
+        "properties": {
+          "signo": { "type": "string" },
+          "texto": { "type": "string" },
+          "puerto": { "$ref": "#/components/schemas/Puerto" },
+          "compatible": { "type": "object", "properties": { "signo": { "type": "string" }, "matiz": { "type": "string" } } },
+          "evita": { "type": "string" },
+          "origen": {
+            "type": "string",
+            "enum": ["ia", "banco"],
+            "description": "ia: escrita por el modelo ese día. banco: del archivo escrito a mano, cuando la IA falla o una profecía no pasa la validación."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "enum": ["signo_desconocido", "fecha_invalida", "fuera_de_rango", "ruta_desconocida", "metodo", "demasiadas", "mantenimiento"] },
+          "mensaje": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "Dia": {
+        "description": "Un día",
+        "headers": { "X-Bardo-Consejo": { "$ref": "#/components/headers/Consejo" } },
+        "content": {
+          "application/json": {
+            "schema": { "type": "object", "properties": { "fecha": { "type": "string", "format": "date" }, "profecias": { "type": "array", "items": { "$ref": "#/components/schemas/Profecia" } } } }
+          }
+        }
+      },
+      "Error": { "description": "Error con la voz del Bardo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  }
+}
