@@ -81,7 +81,8 @@ Arranques:
 
 En el mensaje del día, antes de los signos, van dos profecías por signo escritas a mano con el tono buscado: fíjate en a quién le pasa la desgracia y en cómo rematan, pero no copies sus frases ni sus ideas.
 
-Responde solo con el JSON de los doce signos.`;
+Responde solo con el JSON de los doce signos: un objeto por signo, con "signo" uno de estos: ${SIGNOS.map((s) => `"${s.slug}"`).join(", ")}. La forma exacta, sin nada antes ni después:
+{"profecias":[{"signo":"rust","texto":"…","evita":"…","matiz":"…"}, …]}`;
 
 export function mensajeDelDia(fecha: string, sorteo: SorteoSigno[], historial: Map<string, string[]>): string {
   const ejemplos = ejemplosDelDia(fecha, sorteo).map((e) =>

@@ -192,6 +192,14 @@ describe("prompt", () => {
     expect(4200 + TOPE_SALIDA.low).toBeLessThanOrEqual(8000);
   });
 
+  it("el sistema acaba con la forma exacta del JSON y los doce signos, porque Z.ai no recibe el esquema", () => {
+    const forma = '{"profecias":[{"signo":"rust","texto":"…","evita":"…","matiz":"…"}, …]}';
+    expect(SISTEMA.trimEnd().endsWith(forma)).toBe(true);
+    const slugs = SIGNOS.map((s) => `"${s.slug}"`).join(", ");
+    expect(SISTEMA).toContain(`un objeto por signo, con "signo" uno de estos: ${slugs}.`);
+    expect(ESQUEMA.properties.profecias.items.required).toEqual(["signo", "texto", "evita", "matiz"]);
+  });
+
   it("el esquema es compatible con el modo strict de Groq", () => {
     const objetos = [ESQUEMA, ESQUEMA.properties.profecias.items];
     for (const o of objetos) {
