@@ -68,7 +68,7 @@ El gancho:
 Nunca: personas, colectivos, empresas ni proyectos con nombre propio; burlas de perfiles profesionales (juniors, QA, jefes...); política, religión, salud, dinero real ni despidos; palabrotas, enlaces ni emojis; el carácter @, tampoco en anotaciones o decoradores como @Override (nómbralos sin la arroba).
 
 Para cada signo:
-- "texto": dos frases y entre 18 y 26 palabras en total: la desgracia y un remate. No repitas la idea ni el giro de los días anteriores.
+- "texto": dos frases y como mucho 24 palabras en total (unos 150 caracteres): la desgracia y un remate. No repitas la idea ni el giro de los días anteriores.
 - "evita": lo que deben evitar hoy, en infinitivo y minúscula, sin "no" delante ni punto final (se lee tras "Evita:"), de 60 caracteres como mucho. Bien: "comparar fechas a mano". Mal: "no compares fechas a mano".
 - "matiz": por qué o cómo se lleva con su compatible, cierto y con gracia, de dos a cinco palabras, en minúscula y sin punto final. Va detrás del nombre del compatible, como en los ejemplos: no nombres lenguajes. Varía la forma; como mucho tres matices del día empiezan por "que también".
 

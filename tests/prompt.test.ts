@@ -7,10 +7,11 @@ import { sortearDia } from "../src/generar/sorteo";
 import { SIGNO_POR_SLUG, SIGNOS } from "../src/signos";
 import { sumarDias } from "../src/fecha";
 import { TOPE_SALIDA } from "../src/generar/cadena";
+import { LIMITES } from "../src/generar/validar";
 
 describe("prompt", () => {
   it("el sistema fija las reglas de la sección 5.3", () => {
-    for (const frase of ["entre 18 y 26 palabras", "remate", "burlas de perfiles", "despidos", "emojis", "misma palabra", "@Override"]) {
+    for (const frase of ["como mucho 24 palabras", "remate", "burlas de perfiles", "despidos", "emojis", "misma palabra", "@Override"]) {
       expect(SISTEMA).toContain(frase);
     }
   });
@@ -35,9 +36,17 @@ describe("prompt", () => {
   });
 
   it("texto y matiz se piden en palabras: el modelo no cuenta caracteres", () => {
-    expect(SISTEMA).toContain("dos frases y entre 18 y 26 palabras en total");
+    // GLM-5.3 escribía 25-32 palabras cuando se le pedían 18-26, y 8 de 36 pasaron de 180 caracteres
+    expect(SISTEMA).toContain("dos frases y como mucho 24 palabras en total (unos 150 caracteres)");
+    expect(SISTEMA).not.toContain("entre 18 y 26 palabras");
     expect(SISTEMA).toContain("de dos a cinco palabras");
     expect(SISTEMA).not.toMatch(/\d+ a \d+ caracteres/);
+  });
+
+  it("los caracteres que orientan el texto quedan por debajo del tope del validador, con margen", () => {
+    const orientativos = Number(/\(unos (\d+) caracteres\)/.exec(SISTEMA)?.[1]);
+    expect(orientativos).toBeGreaterThanOrEqual(LIMITES.texto[0]);
+    expect(orientativos).toBeLessThanOrEqual(LIMITES.texto[1] - 25);
   });
 
   it("el matiz no nombra lenguajes: se lee detrás del nombre del compatible", () => {
