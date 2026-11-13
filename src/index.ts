@@ -4,11 +4,14 @@ import { depsCron, ejecutarCron } from "./cron";
 import type { Env } from "./env";
 import { conCabeceras } from "./http/cabeceras";
 import { json } from "./http/util";
+import { tarjeta } from "./tarjeta";
 
-// Se completa con la tarjeta SVG y la web
+// Se completa con la web
 async function enrutar(request: Request, env: Env, ahoraMs: number): Promise<Response> {
   const ruta = new URL(request.url).pathname;
   if (ruta.startsWith("/api/v1/")) return api(request, env, ahoraMs);
+  const t = /^\/tarjeta\/([A-Za-z0-9-]+)\.svg$/.exec(ruta);
+  if (t && (request.method === "GET" || request.method === "HEAD")) return tarjeta(request, env, t[1], ahoraMs);
   return env.ASSETS.fetch(request);
 }
 
