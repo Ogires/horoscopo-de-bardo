@@ -41,7 +41,25 @@ describe("prompt", () => {
   });
 
   it("el matiz no nombra lenguajes: se lee detrás del nombre del compatible", () => {
-    expect(SISTEMA).toContain('Va detrás del nombre del compatible ("Go, a regañadientes"): no nombres lenguajes');
+    expect(SISTEMA).toContain("Va detrás del nombre del compatible, como en los ejemplos: no nombres lenguajes");
+  });
+
+  it("la desgracia le pasa a quien programa; el lenguaje es el instrumento y el gancho, la causa", () => {
+    for (const frase of [
+      "La desgracia le pasa a quien programa, no al programa", "la culpa", "el ridículo delante del equipo",
+      "la tarde o el fin de semana perdidos", "la llamada de madrugada", "el arreglo que rompe otra cosa",
+      "el aviso que ignorasteis", "lo «temporal» que se queda para siempre", "el instrumento del destino",
+      "sus víctimas resignadas", "El gancho es la causa", "Nunca inventes una consecuencia técnica para dar dramatismo",
+      "el drama va en lo humano",
+    ]) {
+      expect(SISTEMA).toContain(frase);
+    }
+  });
+
+  it("sin los matices y remates sueltos que el modelo copiaba: ahora los enseñan los 24 ejemplos", () => {
+    for (const copiado of ["solo los viernes", "para discutir de tipos", "La claridad será una ilusión", "a regañadientes"]) {
+      expect(SISTEMA).not.toContain(copiado);
+    }
   });
 
   it("es una profecía: nunca en imperativo", () => {
@@ -57,7 +75,7 @@ describe("prompt", () => {
   it("el remate varía de forma, es concreto y no tiene un «Bien» que se vuelva plantilla", () => {
     for (const frase of [
       "una consecuencia absurda, la resignación del bardo o un giro irónico", "Nunca una frase abstracta",
-      'Mal: "La claridad será una ilusión."', '"Lo notaréis al..."',
+      '"Lo notaréis al..."',
     ]) {
       expect(SISTEMA).toContain(frase);
     }
