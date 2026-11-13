@@ -1,4 +1,4 @@
-// src/generar/cadena.ts — gpt-oss-120b → gpt-oss-20b → banco
+// src/generar/cadena.ts — los modelos de la cadena, en orden (Groq, o Z.ai con el prefijo zai:) → banco
 import type { Profecia } from "../tipos";
 import { matizDeReserva, profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
 import { ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
@@ -6,6 +6,13 @@ import { sortearDia } from "./sorteo";
 import { motivoInvalida, repite, sextetos } from "./validar";
 
 export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// La API general. La del plan de programación (/api/coding/paas/v4) solo se puede usar en las
+// herramientas de programación que admite Z.ai
+export const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
+/** Un id de modelo con este prefijo va a Z.ai, sin el prefijo; el resto, a Groq */
+export const PREFIJO_ZAI = "zai:";
+// Z.ai no tiene los 8K tokens/minuto de Groq; con thinking, el razonamiento también sale de aquí
+export const TOPE_SALIDA_ZAI = 4096;
 const MAX_MALAS = 3;
 
 interface RespuestaIa {
@@ -15,13 +22,23 @@ interface RespuestaIa {
   matiz: string;
 }
 
+export interface Claves {
+  groq: string;
+  /** Sin ella, los modelos zai: fallan sin llamar y la cadena sigue */
+  zai?: string;
+}
+
 export interface DepsGeneracion {
-  apiKey: string;
+  /** La key de cada proveedor */
+  claves: Claves;
+  /** En orden; los ids salen de vars, porque los modelos caducan */
   modelos: string[];
   /** Textos de los últimos 14 días por signo, del más reciente al más antiguo */
   historial: Map<string, string[]>;
   /** reasoning_effort de Groq; por defecto "low" */
   esfuerzo?: Esfuerzo;
+  /** thinking de Z.ai; por defecto false */
+  pensar?: boolean;
 }
 
 export type Esfuerzo = "low" | "medium";
@@ -71,32 +88,66 @@ function opcionesDelModelo(modelo: string, esfuerzo: Esfuerzo): OpcionesModelo {
   return { strict: false, tope: TOPE_SALIDA[esfuerzo], razonamiento: {} };
 }
 
-async function pedirAGroq(
-  apiKey: string,
-  modelo: string,
-  usuario: string,
-  esfuerzo: Esfuerzo,
-): Promise<{ profecias: RespuestaIa[]; tokens: number }> {
-  const o = opcionesDelModelo(modelo, esfuerzo);
-  const r = await fetch(GROQ_URL, {
-    method: "POST",
-    signal: AbortSignal.timeout(60_000),
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({
+interface Peticion {
+  proveedor: "groq" | "zai";
+  url: string;
+  clave: string | undefined;
+  /** Milisegundos; el cron no cuenta la espera de red como CPU */
+  espera: number;
+  cuerpo: Record<string, unknown>;
+}
+
+function peticionDelModelo(modelo: string, usuario: string, deps: DepsGeneracion): Peticion {
+  const messages = [
+    { role: "system", content: SISTEMA },
+    { role: "user", content: usuario },
+  ];
+  if (modelo.startsWith(PREFIJO_ZAI)) {
+    return {
+      proveedor: "zai",
+      url: ZAI_URL,
+      clave: deps.claves.zai,
+      // El modelo gratuito de Z.ai es más lento que Groq, y más si razona
+      espera: 120_000,
+      cuerpo: {
+        model: modelo.slice(PREFIJO_ZAI.length),
+        messages,
+        max_tokens: TOPE_SALIDA_ZAI,
+        temperature: 0.9,
+        thinking: { type: deps.pensar ? "enabled" : "disabled" },
+        // Z.ai solo tiene modo JSON, sin esquema: la forma va descrita al final de SISTEMA
+        response_format: { type: "json_object" },
+      },
+    };
+  }
+  const o = opcionesDelModelo(modelo, deps.esfuerzo ?? "low");
+  return {
+    proveedor: "groq",
+    url: GROQ_URL,
+    clave: deps.claves.groq,
+    espera: 60_000,
+    cuerpo: {
       model: modelo,
-      messages: [
-        { role: "system", content: SISTEMA },
-        { role: "user", content: usuario },
-      ],
+      messages,
       // Entrada ~4.200 + tope de low: por debajo de los 8K tokens/minuto de Groq. Con medium, el
       // razonamiento pasó de 3.200 tokens y con 3.500 el JSON llegaba vacío o cortado
       max_tokens: o.tope,
       temperature: 0.9,
       ...o.razonamiento,
       response_format: { type: "json_schema", json_schema: { name: "horoscopo", strict: o.strict, schema: ESQUEMA } },
-    }),
+    },
+  };
+}
+
+async function pedirALaIa(p: Peticion): Promise<{ profecias: RespuestaIa[]; tokens: number }> {
+  if (!p.clave) throw new Error(`${p.proveedor}_sin_clave`);
+  const r = await fetch(p.url, {
+    method: "POST",
+    signal: AbortSignal.timeout(p.espera),
+    headers: { authorization: `Bearer ${p.clave}`, "content-type": "application/json" },
+    body: JSON.stringify(p.cuerpo),
   });
-  if (!r.ok) throw new Error(`groq_${r.status}`);
+  if (!r.ok) throw new Error(`${p.proveedor}_${r.status}`);
   const cuerpo = await r.json<{ choices: { message: { content: string } }[]; usage?: { total_tokens?: number } }>();
   const { profecias } = JSON.parse(cuerpo.choices[0].message.content) as { profecias: RespuestaIa[] };
   const signos = profecias.map((p) => p.signo);
@@ -118,7 +169,7 @@ export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<D
 
   for (const modelo of deps.modelos) {
     try {
-      const r = await pedirAGroq(deps.apiKey, modelo, usuario, deps.esfuerzo ?? "low");
+      const r = await pedirALaIa(peticionDelModelo(modelo, usuario, deps));
       tokens += r.tokens;
       const porSigno = new Map(r.profecias.map((p) => [p.signo, p]));
       // Más lo que ya se ha aceptado hoy; empieza de cero con cada modelo

@@ -3,13 +3,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import banco from "../data/banco.json";
 import { matizDeReserva } from "../src/generar/banco";
 import { generarDia } from "../src/generar/cadena";
-import { ejemplosDelDia } from "../src/generar/prompt";
+import { ejemplosDelDia, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
-import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch } from "./helpers";
+import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch, ZAI_URL } from "./helpers";
 
 const FECHA = "2026-11-13";
 const deps = (historial = new Map<string, string[]>()) => ({
-  apiKey: "clave", modelos: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"], historial,
+  claves: { groq: "clave", zai: "clave-zai" }, modelos: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"], historial,
 });
 afterEach(restaurarFetch);
 
@@ -80,6 +80,64 @@ describe("generarDia", () => {
       expect(c.response_format.json_schema.strict).toBe(false);
       expect(c).not.toHaveProperty("reasoning_effort");
       expect(c).not.toHaveProperty("reasoning_format");
+    });
+  });
+
+  describe("Z.ai: los modelos con el prefijo zai:", () => {
+    const glm = "zai:glm-4.7-flash";
+
+    it("van a Z.ai con su key, el id sin el prefijo y en modo JSON, sin esquema ni parámetros de Groq", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), modelos: [glm] });
+      expect(g.modelo).toBe(glm);
+      expect(g.profecias.every((p) => p.origen === "ia")).toBe(true);
+      expect(g.tokens).toBe(4500);
+      const c = llamadas[0];
+      expect(c.url).toBe(ZAI_URL);
+      expect(c.cabeceras.get("authorization")).toBe("Bearer clave-zai");
+      expect(c.cuerpo.model).toBe("glm-4.7-flash");
+      expect(c.cuerpo.messages[0]).toEqual({ role: "system", content: SISTEMA });
+      // Z.ai solo tiene modo JSON: el esquema no se impone (va descrito en SISTEMA)
+      expect(c.cuerpo.response_format).toEqual({ type: "json_object" });
+      expect(c.cuerpo.thinking).toEqual({ type: "disabled" });
+      expect(c.cuerpo.max_tokens).toBe(4096);
+      expect(c.cuerpo.temperature).toBe(0.9);
+      expect(c.cuerpo).not.toHaveProperty("reasoning_effort");
+      expect(c.cuerpo).not.toHaveProperty("reasoning_format");
+      expect(c.cuerpo.stream).toBeUndefined();
+    });
+
+    it("con pensar, activan el razonamiento (thinking)", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, { ...deps(), modelos: [glm], pensar: true });
+      expect(llamadas[0].cuerpo.thinking).toEqual({ type: "enabled" });
+    });
+
+    it("los de Groq siguen yendo a Groq con su key y sin thinking", async () => {
+      const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      await generarDia(FECHA, { ...deps(), pensar: true });
+      expect(llamadas[0].url).toBe(GROQ_URL);
+      expect(llamadas[0].cabeceras.get("authorization")).toBe("Bearer clave");
+      expect(llamadas[0].cuerpo).not.toHaveProperty("thinking");
+    });
+
+    it("si Z.ai falla, la cadena sigue con el siguiente modelo, aunque sea de Groq", async () => {
+      const llamadas = interceptar((url) => {
+        if (url === ZAI_URL) return new Response("ocupado", { status: 429 });
+        return url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null;
+      });
+      const g = await generarDia(FECHA, { ...deps(), modelos: [glm, "openai/gpt-oss-120b"] });
+      expect(llamadas.map((l) => l.url)).toEqual([ZAI_URL, GROQ_URL]);
+      expect(g.modelo).toBe("openai/gpt-oss-120b");
+      expect(g.fallos).toEqual([`${glm}:Error: zai_429`]);
+    });
+
+    it("sin key de Z.ai no se la llama y la cadena sigue con el siguiente modelo", async () => {
+      const llamadas = interceptar((url) => (url === ZAI_URL || url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA)) : null));
+      const g = await generarDia(FECHA, { ...deps(), claves: { groq: "clave" }, modelos: [glm, "openai/gpt-oss-120b"] });
+      expect(llamadas.map((l) => l.url)).toEqual([GROQ_URL]);
+      expect(g.modelo).toBe("openai/gpt-oss-120b");
+      expect(g.fallos).toEqual([`${glm}:Error: zai_sin_clave`]);
     });
   });
 

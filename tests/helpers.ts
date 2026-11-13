@@ -5,6 +5,7 @@ import { SIGNOS } from "../src/signos";
 import type { Profecia } from "../src/tipos";
 
 export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+export const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 const fetchReal = globalThis.fetch.bind(globalThis);
 
 export interface Llamada {

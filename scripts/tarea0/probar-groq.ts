@@ -83,7 +83,7 @@ for (let i = 0; i < 3; i++) {
   const fecha = sumarDias(inicio, i);
   const t0 = Date.now();
   usos = [];
-  const g = await generarDia(fecha, { apiKey, modelos, historial, esfuerzo });
+  const g = await generarDia(fecha, { claves: { groq: apiKey }, modelos, historial, esfuerzo });
   const ms = Date.now() - t0;
   const ganchos = Object.fromEntries(sortearDia(fecha).map((s) => [s.signo, s.gancho]));
   dias.push({ ...g, fecha, ms, usos, ganchos });
