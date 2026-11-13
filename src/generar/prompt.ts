@@ -1,65 +1,53 @@
 // src/generar/prompt.ts — sin entrada de usuarios: el prompt es cerrado (LLM01 no aplica)
 import { SIGNO_POR_SLUG, SIGNOS } from "../signos";
-import type { SorteoSigno } from "./sorteo";
+import { BANCO, type EntradaBanco } from "./banco";
+import { hash32, type SorteoSigno } from "./sorteo";
 
-export interface Ejemplo {
+export interface EjemploDelDia extends EntradaBanco {
   signo: string;
-  gancho: string;
-  texto: string;
-  evita: string;
-  compatible: string;
-  matiz: string;
 }
 
-// Solo marcan el tono: sus ganchos no están en el sorteo, sus textos no están en el banco y
-// entran en el filtro de copias, como el banco. Ninguno abre con una fórmula de juglar, cada
-// uno arranca de una forma y sus remates, de formas distintas (giro, consecuencia, resignación),
-// no añaden hechos técnicos al gancho
-export const EJEMPLOS: readonly Ejemplo[] = [
-  {
-    signo: "python",
-    gancho: "{} crea un diccionario vacío; un conjunto vacío se escribe set()",
-    texto: "Escribiréis {} para estrenar un conjunto y Python os dará un diccionario. Para él es tradición; para vosotros, una tarde perdida.",
-    evita: "dar por hecho que {} es un conjunto vacío",
-    compatible: "javascript",
-    matiz: "por amor a las llaves",
-  },
-  {
-    signo: "java",
-    gancho: "un String[] pasa por Object[], y guardar ahí un Integer lanza ArrayStoreException",
-    texto: "Cuando metáis un Integer en un Object[], la JVM os revelará que era un String[] disfrazado. El compilador, que lo sabía, no dirá ni pío.",
-    evita: "guardar cualquier cosa en un Object[]",
-    compatible: "kotlin",
-    matiz: "que ni lo dejaría compilar",
-  },
-  {
-    signo: "rust",
-    gancho: "el operador ? no compila en una función que devuelve un simple i32",
-    texto: "Bastará un ? en una función que devuelve un i32 para que el compilador se plante. Cambiaréis la firma y, os lo advierto, también cada llamada.",
-    evita: "propagar errores desde una función que no los devuelve",
-    compatible: "go",
-    matiz: "solo para discutir de errores",
-  },
-  {
-    signo: "javascript",
-    gancho: "typeof NaN devuelve 'number'",
-    texto: "Un NaN se colará en vuestros cálculos y typeof os jurará que es un número. Técnicamente no miente, y eso os consolará muy poco.",
-    evita: "comprobar con typeof si algo es un número",
-    compatible: "python",
-    matiz: "a golpe de coma flotante",
-  },
-];
+// Profecías del banco que cuentan lo mismo que un gancho: el día de ese gancho no salen de
+// ejemplo, porque el modelo las parafrasearía y el filtro de copias no ve paráfrasis
+export const MISMA_IDEA: Readonly<Record<string, readonly string[]>> = {
+  "unwrap() sobre un None hace entrar en pánico al programa": ["Un unwrap() que dejasteis"],
+  "[10, 9, 1].sort() ordena los números como si fueran texto: 1, 10, 9": ["Os lo advierto: [10, 9, 1].sort()"],
+  "forEach no espera a las funciones async que se le pasan": ["Una promesa se quedará sin su await"],
+  "mezclar tabuladores y espacios en la sangría da TabError": ["Hoy un espacio de más"],
+  "lista.sort() ordena en el sitio y devuelve None": ["A media tarde aparecerá 'NoneType'"],
+  "== entre dos Integer da true con 127 y false con 128, por la caché de valores": ["Compararéis dos cadenas con =="],
+  "una consulta LINQ no se ejecuta hasta que alguien la recorre": ["Escribiréis una consulta LINQ"],
+  "un evento sin suscriptores vale null, e invocarlo sin ?. lanza NullReferenceException": ["Un NullReferenceException brotará"],
+  "una variable declarada y sin usar es un error de compilación": ["Un import que no usáis"],
+  "si todas las goroutines esperan a la vez, el runtime aborta con un deadlock": ["Las goroutines que lanzasteis"],
+  "strpos devuelve 0 si el texto está al principio, y 0 se evalúa como false": ["Hoy strpos devolverá 0"],
+  "array_merge renumera las claves numéricas; el operador + las conserva": ["Un array será hoy lista"],
+  "MOVE a un campo numérico más corto pierde los dígitos de la izquierda sin avisar": ["Un campo PIC 9(5)V99"],
+  "sin ROUNDED, COMPUTE trunca los decimales que no caben en el campo": ["Un campo PIC 9(5)V99"],
+  "JSON.parse devuelve any: lo que salga de ahí no lo comprueba nadie": ["Un any se colará", "Vuestros tipos jurarán"],
+  "NULL = NULL no es verdadero: hay que usar IS NULL": ["NULL no será igual a NULL"],
+  "lateinit no se puede usar con Int ni con los demás tipos primitivos": ["Un lateinit prometerá"],
+  "fromJust sobre un Nothing revienta en tiempo de ejecución": ["Un head sobre una lista vacía"],
+  "seq solo evalúa hasta la forma normal débil de cabecera": ["La pereza de vuestro programa"],
+};
+
+// Dos profecías del banco por signo, distintas y elegidas con la fecha: marcan el tono sin que el
+// modelo vea siempre las mismas. El banco entero ya está en el filtro de copias
+export function ejemplosDelDia(fecha: string, sorteo: readonly SorteoSigno[]): EjemploDelDia[] {
+  return sorteo.flatMap((s) => {
+    const vetados = MISMA_IDEA[s.gancho] ?? [];
+    const lista = BANCO[s.signo].filter((e) => !vetados.some((v) => e.texto.startsWith(v)));
+    const h = hash32(`ejemplos:${fecha}:${s.signo}`);
+    const i = h % lista.length;
+    // Un salto de 1 a n-1 posiciones: el segundo nunca es el primero
+    const j = (i + 1 + (Math.floor(h / lista.length) % (lista.length - 1))) % lista.length;
+    return [lista[i], lista[j]].map((e) => ({ signo: s.signo, ...e }));
+  });
+}
 
 const nombre = (slug: string) => SIGNO_POR_SLUG.get(slug)!.nombre;
 
-const ejemplos = EJEMPLOS.map((e) =>
-  [
-    `- ${nombre(e.signo)}, gancho «${e.gancho}»:`,
-    `  texto: "${e.texto}"`,
-    `  evita: "${e.evita}" · compatible: ${nombre(e.compatible)}, "${e.matiz}"`,
-  ].join("\n"),
-).join("\n");
-
+// Fijo: los ejemplos cambian cada día y van en el mensaje del usuario (mensajeDelDia)
 export const SISTEMA = `Eres el Bardo, un juglar pesimista que canta el horóscopo diario de doce lenguajes de programación.
 
 Voz:
@@ -87,12 +75,17 @@ Arranques:
 - Como mucho dos profecías del día empiezan por la misma palabra ("El" y "La" también cuentan) y como mucho cuatro por un verbo en vosotros.
 - Las fórmulas de juglar ("os lo advierto", "escuchad", "cantan los astros") van en medio o al final, y como mucho en tres profecías del día.
 
-Ejemplos (no copies sus frases):
-${ejemplos}
+En el mensaje del día, antes de los signos, van dos profecías por signo escritas a mano con el tono buscado: imita su tono, pero no copies sus frases ni sus ideas.
 
 Responde solo con el JSON de los doce signos.`;
 
 export function mensajeDelDia(fecha: string, sorteo: SorteoSigno[], historial: Map<string, string[]>): string {
+  const ejemplos = ejemplosDelDia(fecha, sorteo).map((e) =>
+    [
+      `- ${nombre(e.signo)}: "${e.texto}"`,
+      `  evita: "${e.evita}" · compatible: ${nombre(e.compatible.signo)}, "${e.compatible.matiz}"`,
+    ].join("\n"),
+  );
   const bloques = sorteo.map((s) => {
     const previos = historial.get(s.signo) ?? [];
     return [
@@ -102,7 +95,11 @@ export function mensajeDelDia(fecha: string, sorteo: SorteoSigno[], historial: M
       previos.length ? `Días anteriores:\n${previos.map((t) => `- ${t}`).join("\n")}` : "Días anteriores: ninguno",
     ].join("\n");
   });
-  return `Horóscopo del ${fecha}.\n\n${bloques.join("\n")}`;
+  return [
+    `Profecías con el tono buscado (no copies sus frases ni sus ideas):\n${ejemplos.join("\n")}`,
+    `Horóscopo del ${fecha}.`,
+    bloques.join("\n"),
+  ].join("\n\n");
 }
 
 // Modo strict: todas las propiedades en required y additionalProperties: false en cada objeto

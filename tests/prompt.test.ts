@@ -1,11 +1,12 @@
 // tests/prompt.test.ts
 import { describe, expect, it } from "vitest";
+import banco from "../data/banco.json";
 import ganchos from "../data/ganchos.json";
-import { TEXTOS_DEL_BANCO } from "../src/generar/banco";
-import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "../src/generar/prompt";
+import { ejemplosDelDia, ESQUEMA, mensajeDelDia, MISMA_IDEA, SISTEMA } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
-import { SIGNO_POR_SLUG } from "../src/signos";
-import { motivoInvalida, repite, sextetos } from "../src/generar/validar";
+import { SIGNO_POR_SLUG, SIGNOS } from "../src/signos";
+import { sumarDias } from "../src/fecha";
+import { TOPE_SALIDA } from "../src/generar/cadena";
 
 describe("prompt", () => {
   it("el sistema fija las reglas de la sección 5.3", () => {
@@ -70,44 +71,79 @@ describe("prompt", () => {
     }
   });
 
-  it("cuatro ejemplos de tono, completos, válidos y que no salen del banco ni del sorteo", () => {
-    const banco = new Set(TEXTOS_DEL_BANCO.flatMap(sextetos));
-    expect(EJEMPLOS).toHaveLength(4);
-    expect(new Set(EJEMPLOS.map((e) => e.signo)).size).toBe(4);
-    for (const e of EJEMPLOS) {
-      // Fuera del sorteo: el día de ese gancho, el modelo no tiene un texto que imitar
-      expect(Object.values(ganchos).flat()).not.toContain(e.gancho);
-      for (const parte of [e.gancho, e.texto, e.evita, e.matiz]) expect(SISTEMA).toContain(parte);
-      expect(motivoInvalida({ texto: e.texto, evita: e.evita, compatible: { signo: e.compatible, matiz: e.matiz } }, e.signo)).toBeNull();
-      expect(repite(e.texto, banco), e.texto).toBe(false);
-    }
-  });
+  describe("ejemplos del banco", () => {
+    const BANCO = banco as Record<string, { texto: string; evita: string; compatible: { signo: string; matiz: string } }[]>;
+    const FECHA = "2026-11-13";
 
-  it("los ejemplos tienen la forma pedida: 18-26 palabras, dos frases, matiz de 2 a 5 palabras y arranques variados", () => {
-    const primeras = EJEMPLOS.map((e) => e.texto.split(/\s/)[0].toLowerCase());
-    expect(new Set(primeras).size).toBe(EJEMPLOS.length);
-    const remates: string[] = [];
-    for (const e of EJEMPLOS) {
-      const palabrasTexto = e.texto.split(/\s+/).length;
-      expect(palabrasTexto, e.texto).toBeGreaterThanOrEqual(18);
-      expect(palabrasTexto, e.texto).toBeLessThanOrEqual(26);
-      expect([...e.texto].length, e.texto).toBeLessThanOrEqual(150);
-      // Una frase acaba en . ! o ? seguido de mayúscula: el ? de Rust en medio no cuenta
-      const frases = e.texto.split(/(?<=[.!?])\s+(?=\p{Lu})/u);
-      expect(frases, e.texto).toHaveLength(2);
-      remates.push(frases[1]);
-      expect(e.texto, e.texto).not.toMatch(/^(?:os |escuchad|cantan|oíd|cuidado|atended)/i);
-      const palabras = e.matiz.split(/\s+/).length;
-      expect(palabras, e.matiz).toBeGreaterThanOrEqual(2);
-      expect(palabras, e.matiz).toBeLessThanOrEqual(5);
-    }
-    expect(EJEMPLOS.filter((e) => e.matiz.startsWith("que también")).length).toBeLessThanOrEqual(1);
-    // Los ejemplos no pueden enseñar la plantilla de verbos en futuro: como mucho dos empiezan por uno
-    expect(EJEMPLOS.filter((e) => /^\p{Lu}\p{Ll}+(?:réis|rán|rá)\s/u.test(e.texto)).length).toBeLessThanOrEqual(2);
-    expect(EJEMPLOS.some((e) => /^(?:Cuando|Si)\s/.test(e.texto))).toBe(true);
-    // Remates de formas distintas: ninguno con la plantilla «Lo …réis al…» y no dos con la misma palabra
-    for (const r of remates) expect(r, r).not.toMatch(/^Lo \p{L}+réis\s/u);
-    expect(new Set(remates.map((r) => r.split(/\s/)[0])).size).toBe(remates.length);
+    it("veinticuatro profecías del banco, dos distintas por signo, en el orden del sorteo", () => {
+      const sorteo = sortearDia(FECHA);
+      const ejemplos = ejemplosDelDia(FECHA, sorteo);
+      expect(ejemplos).toHaveLength(24);
+      expect(ejemplos.map((e) => e.signo)).toEqual(sorteo.flatMap((s) => [s.signo, s.signo]));
+      for (const s of SIGNOS) {
+        const suyos = ejemplos.filter((e) => e.signo === s.slug);
+        expect(new Set(suyos.map((e) => e.texto)).size).toBe(2);
+        // Tal cual están en el banco: texto, «Evita» y compatible con su matiz
+        for (const { signo, ...e } of suyos) expect(BANCO[signo]).toContainEqual(e);
+      }
+    });
+
+    it("se eligen de forma determinista con la fecha y cambian de un día a otro", () => {
+      const de = (fecha: string) => ejemplosDelDia(fecha, sortearDia(fecha)).map((e) => e.texto);
+      expect(de(FECHA)).toEqual(de(FECHA));
+      expect(de(sumarDias(FECHA, 1))).not.toEqual(de(FECHA));
+      // En una semana, cada signo enseña más de dos de sus siete profecías
+      const semana = Array.from({ length: 7 }, (_, i) => sumarDias(FECHA, i));
+      for (const s of SIGNOS) {
+        const vistos = new Set(semana.flatMap((f) => ejemplosDelDia(f, sortearDia(f)).filter((e) => e.signo === s.slug).map((e) => e.texto)));
+        expect(vistos.size, s.slug).toBeGreaterThan(2);
+      }
+    });
+
+    it("el día de un gancho no sale de ejemplo la profecía del banco que cuenta lo mismo", () => {
+      const strpos = "strpos devuelve 0 si el texto está al principio, y 0 se evalúa como false";
+      const deStrpos = BANCO.php.find((e) => e.texto.startsWith("Hoy strpos devolverá 0"))!.texto;
+      const fechas = Array.from({ length: 40 }, (_, i) => sumarDias(FECHA, i));
+      const textosPhp = (gancho: string) =>
+        fechas.flatMap((f) => {
+          const sorteo = sortearDia(f).map((s) => (s.signo === "php" ? { ...s, gancho } : s));
+          return ejemplosDelDia(f, sorteo).filter((e) => e.signo === "php").map((e) => e.texto);
+        });
+      expect(textosPhp(strpos)).not.toContain(deStrpos);
+      // Con otro gancho sí sale algún día: la prueba no pasa por casualidad
+      expect(textosPhp(ganchos.php.find((g) => g.startsWith("en date()"))!)).toContain(deStrpos);
+    });
+
+    it("las parejas gancho-profecía con la misma idea existen y son del mismo signo", () => {
+      expect(Object.keys(MISMA_IDEA).length).toBeGreaterThan(0);
+      for (const [gancho, inicios] of Object.entries(MISMA_IDEA)) {
+        const signos = Object.entries(ganchos as Record<string, string[]>).filter(([, l]) => l.includes(gancho)).map(([s]) => s);
+        expect(signos, gancho).toHaveLength(1);
+        for (const inicio of inicios) {
+          expect(BANCO[signos[0]].filter((e) => e.texto.startsWith(inicio)), inicio).toHaveLength(1);
+        }
+        // Siempre quedan al menos dos profecías para elegir
+        expect(BANCO[signos[0]].length - inicios.length).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    it("van en el mensaje del día, antes de los signos, con signo, texto, «Evita», compatible y matiz", () => {
+      const sorteo = sortearDia(FECHA);
+      const m = mensajeDelDia(FECHA, sorteo, new Map());
+      const cabecera = "Profecías con el tono buscado (no copies sus frases ni sus ideas):";
+      expect(m).toContain(cabecera);
+      expect(m.indexOf(cabecera)).toBeLessThan(m.indexOf(`Horóscopo del ${FECHA}`));
+      for (const e of ejemplosDelDia(FECHA, sorteo)) {
+        const nombre = (slug: string) => SIGNO_POR_SLUG.get(slug)!.nombre;
+        expect(m).toContain(`- ${nombre(e.signo)}: "${e.texto}"\n  evita: "${e.evita}" · compatible: ${nombre(e.compatible.signo)}, "${e.compatible.matiz}"`);
+      }
+    });
+
+    it("el sistema los anuncia y ya no lleva ejemplos escritos a mano", () => {
+      expect(SISTEMA).toContain("no copies sus frases ni sus ideas");
+      expect(SISTEMA).not.toContain("Ejemplos (no copies sus frases)");
+      for (const t of Object.values(BANCO).flat().map((e) => e.texto)) expect(SISTEMA).not.toContain(t);
+    });
   });
 
   it("el mensaje lleva los doce signos con su gancho, su compatible y los días anteriores", () => {
@@ -121,13 +157,21 @@ describe("prompt", () => {
     expect(m).toContain("Días anteriores: ninguno");
   });
 
-  it("la entrada del tercer día cabe en ~2.600 tokens", () => {
-    // Medido con Groq en las iteraciones 2 y 3: ~300 tokens fijos (formato y esquema) más un token
-    // por cada 4 caracteres. El tercer día lleva dos días de textos de ~140 caracteres por signo
-    const sorteo = sortearDia("2026-11-15");
-    const texto = "x".repeat(140);
-    const m = mensajeDelDia("2026-11-15", sorteo, new Map(sorteo.map((s) => [s.signo, [texto, texto]])));
-    expect(300 + (SISTEMA.length + m.length) / 4).toBeLessThanOrEqual(2600);
+  it("la entrada del tercer día, con los 24 ejemplos, cabe en ~4.200 tokens", () => {
+    // Medido con Groq en las iteraciones 2 a 4: ~300 tokens fijos (formato y esquema) más un token
+    // por cada 4 caracteres. El tercer día lleva dos días de textos de ~140 caracteres por signo.
+    // Los ejemplos cambian cada día: se mira el peor de dos meses
+    for (let i = 0; i < 60; i++) {
+      const fecha = sumarDias("2026-11-15", i);
+      const sorteo = sortearDia(fecha);
+      const texto = "x".repeat(140);
+      const m = mensajeDelDia(fecha, sorteo, new Map(sorteo.map((s) => [s.signo, [texto, texto]])));
+      expect(300 + (SISTEMA.length + m.length) / 4, fecha).toBeLessThanOrEqual(4200);
+    }
+  });
+
+  it("entrada más tope de salida con low caben en los 8.000 tokens por minuto de Groq", () => {
+    expect(4200 + TOPE_SALIDA.low).toBeLessThanOrEqual(8000);
   });
 
   it("el esquema es compatible con el modo strict de Groq", () => {

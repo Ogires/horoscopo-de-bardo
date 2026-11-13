@@ -22,7 +22,7 @@ const modelos = (process.env.MODELOS ?? "openai/gpt-oss-120b").split(",").map((m
 if (!modelos.length) throw new Error("MODELOS está vacío");
 console.log(`reasoning_effort: ${esfuerzo} · modelos: ${modelos.join(" → ")}`);
 
-// Groq limita a 8K tokens por minuto y cada llamada pide ~2.600 más el tope de salida:
+// Groq limita a 8K tokens por minuto y cada llamada pide ~4.000 más el tope de salida:
 // sin pausa, el segundo día daría 429 y caería al banco sin que se note. Qwen 3.8 tiene
 // además un tope de 1.000 tokens de salida por minuto y cada llamada saca ~1.900: PAUSA_S=130
 const PAUSA_MS = Number(process.env.PAUSA_S ?? 65) * 1000;

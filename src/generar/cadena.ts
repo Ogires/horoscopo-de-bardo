@@ -1,7 +1,7 @@
 // src/generar/cadena.ts — gpt-oss-120b → gpt-oss-20b → banco
 import type { Profecia } from "../tipos";
 import { matizDeReserva, profeciaDelBanco, TEXTOS_DEL_BANCO } from "./banco";
-import { EJEMPLOS, ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
+import { ESQUEMA, mensajeDelDia, SISTEMA } from "./prompt";
 import { sortearDia } from "./sorteo";
 import { motivoInvalida, repite, sextetos } from "./validar";
 
@@ -25,7 +25,9 @@ export interface DepsGeneracion {
 }
 
 export type Esfuerzo = "low" | "medium";
-const TOPE_SALIDA: Record<Esfuerzo, number> = { low: 3500, medium: 5000 };
+// Con ~4.200 de entrada el tercer día, low (3.500) cabe en los 8K tokens/minuto de Groq; medium y
+// Qwen (5.000) se midieron con la entrada de la iteración 4 (~2.600) y ya no caben: están por decidir
+export const TOPE_SALIDA: Record<Esfuerzo, number> = { low: 3500, medium: 5000 };
 
 export interface Descartada {
   modelo: string;
@@ -63,7 +65,7 @@ function opcionesDelModelo(modelo: string, esfuerzo: Esfuerzo): OpcionesModelo {
     return { strict: true, tope: TOPE_SALIDA[esfuerzo], razonamiento: { reasoning_effort: esfuerzo } };
   }
   if (modelo === "qwen/qwen3.8-27b") {
-    // No se sabe cuánto razona con low: el tope de medium, que con ~2.600 de entrada cabe en 8K/min
+    // No se sabe cuánto razona con low: el tope de medium (ver TOPE_SALIDA)
     return { strict: true, tope: TOPE_SALIDA.medium, razonamiento: { reasoning_effort: esfuerzo, reasoning_format: "parsed" } };
   }
   return { strict: false, tope: TOPE_SALIDA[esfuerzo], razonamiento: {} };
@@ -86,7 +88,7 @@ async function pedirAGroq(
         { role: "system", content: SISTEMA },
         { role: "user", content: usuario },
       ],
-      // Entrada ~2.600 + tope: por debajo de los 8K tokens/minuto de Groq. Con medium, el
+      // Entrada ~4.200 + tope de low: por debajo de los 8K tokens/minuto de Groq. Con medium, el
       // razonamiento pasó de 3.200 tokens y con 3.500 el JSON llegaba vacío o cortado
       max_tokens: o.tope,
       temperature: 0.9,
@@ -104,8 +106,9 @@ async function pedirAGroq(
 
 export async function generarDia(fecha: string, deps: DepsGeneracion): Promise<DiaGenerado> {
   const sorteo = sortearDia(fecha);
-  // Filtro de copias global: los 14 días de todos los signos, el banco entero y los ejemplos del prompt
-  const textos = [...[...deps.historial.values()].flat(), ...TEXTOS_DEL_BANCO, ...EJEMPLOS.map((e) => e.texto)];
+  // Filtro de copias global: los 14 días de todos los signos y el banco entero, del que salen los
+  // ejemplos del prompt
+  const textos = [...[...deps.historial.values()].flat(), ...TEXTOS_DEL_BANCO];
   const previos = new Set(textos.flatMap(sextetos));
   const recientes = new Map([...deps.historial].map(([signo, textos]) => [signo, textos.slice(0, 3)]));
   const usuario = mensajeDelDia(fecha, sorteo, recientes);

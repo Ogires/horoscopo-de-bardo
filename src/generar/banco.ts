@@ -4,12 +4,12 @@ import matices from "../../data/matices.json";
 import type { Profecia } from "../tipos";
 import { hash32, sortearDia, type SorteoSigno } from "./sorteo";
 
-interface EntradaBanco {
+export interface EntradaBanco {
   texto: string;
   evita: string;
   compatible: { signo: string; matiz: string };
 }
-const BANCO = banco as Record<string, EntradaBanco[]>;
+export const BANCO = banco as Record<string, EntradaBanco[]>;
 
 // Para que la IA no copie el banco: entra en el filtro de copias de la cadena
 export const TEXTOS_DEL_BANCO: readonly string[] = Object.values(BANCO).flatMap((l) => l.map((e) => e.texto));

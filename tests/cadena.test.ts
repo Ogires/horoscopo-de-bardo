@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import banco from "../data/banco.json";
 import { matizDeReserva } from "../src/generar/banco";
 import { generarDia } from "../src/generar/cadena";
-import { EJEMPLOS } from "../src/generar/prompt";
+import { ejemplosDelDia } from "../src/generar/prompt";
 import { sortearDia } from "../src/generar/sorteo";
 import { GROQ_URL, interceptar, profeciasIa, respuestaGroq, restaurarFetch } from "./helpers";
 
@@ -243,9 +243,15 @@ describe("generarDia", () => {
     repetida(await generarDia(FECHA, deps()), "rust");
   });
 
-  it("descarta una profecía que copia un ejemplo del prompt", async () => {
-    interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { php: { texto: EJEMPLOS[2].texto } })) : null));
-    repetida(await generarDia(FECHA, deps()), "php");
+  it("descarta una profecía que copia 6 palabras de un ejemplo del día, que sale del banco", async () => {
+    const ejemplo = ejemplosDelDia(FECHA, sortearDia(FECHA)).find((e) => e.signo === "go")!;
+    const seis = ejemplo.texto.split(" ").slice(1, 7).join(" ");
+    const copia = `Escuchad, PHP: ${seis} y así seguirá hasta el final del día.`;
+    const llamadas = interceptar((url) => (url === GROQ_URL ? respuestaGroq(profeciasIa(FECHA, { php: { texto: copia } })) : null));
+    const g = await generarDia(FECHA, deps());
+    // El ejemplo iba en el prompt, y el banco entero ya está en el filtro de copias
+    expect(llamadas[0].cuerpo.messages[1].content).toContain(ejemplo.texto);
+    repetida(g, "php");
   });
 
   it("descarta una profecía que copia 6 palabras de otro signo del mismo día", async () => {
