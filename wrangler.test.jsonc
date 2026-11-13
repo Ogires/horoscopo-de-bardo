@@ -13,6 +13,7 @@
     "FECHA_LANZAMIENTO": "2026-01-01",
     "URL_PUBLICA": "https://bardo.webninja.fyi",
     "GROQ_API_KEY": "clave-de-prueba",
+    "ZAI_API_KEY": "clave-zai-de-prueba",
     "TELEGRAM_BOT_TOKEN": "token-de-prueba",
     "TELEGRAM_AVISOS": "42"
   }

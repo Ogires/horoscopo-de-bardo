@@ -21,5 +21,6 @@
     "FECHA_LANZAMIENTO": "2026-12-01",
     "URL_PUBLICA": "https://bardo.webninja.fyi"
   }
-  // Secrets: GROQ_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_AVISOS (chat privado del administrador)
+  // Secrets: GROQ_API_KEY, ZAI_API_KEY (modelos con el prefijo zai:), TELEGRAM_BOT_TOKEN,
+  // TELEGRAM_AVISOS (chat privado del administrador)
 }

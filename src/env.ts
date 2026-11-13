@@ -9,6 +9,8 @@ export interface Env {
   FECHA_LANZAMIENTO: string;
   URL_PUBLICA: string;
   GROQ_API_KEY: string;
+  /** Para los modelos con el prefijo zai: (src/generar/cadena.ts) */
+  ZAI_API_KEY: string;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_AVISOS: string;
 }
