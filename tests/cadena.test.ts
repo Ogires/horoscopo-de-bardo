@@ -45,7 +45,8 @@ describe("generarDia", () => {
     const [low, medium] = llamadas.map((l) => l.cuerpo.max_tokens);
     expect(low).toBe(3500);
     expect(medium).toBeGreaterThanOrEqual(5000);
-    // Con ~2.500 de entrada el día 3, entrada + tope tiene que caber en los 8K tokens/minuto de Groq
+    // Con los ~2.500 de entrada del día 3 en la iteración 4, entrada + tope cabía en los 8K tokens/minuto
+    // de Groq. Con los 24 ejemplos del banco (~3.800-4.200) ya no cabe: ver TOPE_SALIDA en cadena.ts
     expect(2500 + medium).toBeLessThanOrEqual(8000);
   });
 
@@ -67,6 +68,7 @@ describe("generarDia", () => {
       expect(c.reasoning_format).toBe("parsed");
       expect(c.response_format.json_schema.strict).toBe(true);
       expect(c.max_tokens).toBe(5000);
+      // Entrada de la iteración 4; con los ejemplos del banco ya no cabe (ver TOPE_SALIDA)
       expect(2600 + c.max_tokens).toBeLessThanOrEqual(8000);
     });
 
