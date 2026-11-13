@@ -70,10 +70,23 @@ let usos: Uso[] = [];
 function avisarSiNoEsJson(contenido: unknown) {
   if (typeof contenido !== "string") return console.log(`   contenido: ${JSON.stringify(contenido)}`);
   const t = contenido.trim().replace(/^```[\w-]*\s*([\s\S]*?)\s*```$/, "$1");
+  let datos: unknown;
   try {
-    JSON.parse(t);
+    datos = JSON.parse(t);
   } catch {
-    console.log(`   contenido no JSON (${contenido.length} caracteres): ${contenido.slice(0, 300)} … ${contenido.slice(-120)}`);
+    return console.log(`   contenido no JSON (${contenido.length} caracteres): ${contenido.slice(0, 300)} … ${contenido.slice(-120)}`);
+  }
+  // Con signos_repetidos, generarDia tira la respuesta sin decir cuáles: se apuntan aquí
+  const lista = (datos as { profecias?: unknown } | null)?.profecias;
+  if (!Array.isArray(lista)) return;
+  const cuenta = new Map<string, number>();
+  for (const p of lista) {
+    const signo = String((p as { signo?: unknown } | null)?.signo);
+    cuenta.set(signo, (cuenta.get(signo) ?? 0) + 1);
+  }
+  const repetidos = [...cuenta].filter(([, n]) => n > 1).map(([s, n]) => `${s}×${n}`);
+  if (lista.length !== 12 || repetidos.length) {
+    console.log(`   ${lista.length} elementos · signos: ${[...cuenta.keys()].join(", ")}` + (repetidos.length ? ` · repetidos: ${repetidos.join(", ")}` : ""));
   }
 }
 
