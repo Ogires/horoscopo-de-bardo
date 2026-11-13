@@ -145,6 +145,8 @@ function peticionDelModelo(modelo: string, usuario: string, deps: DepsGeneracion
         max_tokens: deps.pensar ? TOPE_SALIDA_ZAI.pensando : TOPE_SALIDA_ZAI.sinPensar,
         temperature: 0.9,
         thinking: { type: deps.pensar ? "enabled" : "disabled" },
+        // GLM-5.3 siempre razona y por defecto en "max": con pensar se pide el ligero
+        ...(deps.pensar ? { reasoning_effort: "low" } : {}),
         // Z.ai solo tiene modo JSON, sin esquema: la forma va descrita al final de SISTEMA
         response_format: { type: "json_object" },
       },
