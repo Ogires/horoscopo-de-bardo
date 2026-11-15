@@ -55,7 +55,7 @@ function documento(env: Env, m: Marco): string {
 </head>
 <body>
 <a class="saltar" href="#contenido">Saltar al contenido</a>
-<header class="cabecera"><a class="marca" href="/"><span class="emoji" aria-hidden="true">🪕</span> Horóscopo de Bardo</a>
+<header class="cabecera"><a class="marca" href="/"><svg class="sello" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="30"/><polygon points="32,10 35.4,23.7 47.6,16.4 40.3,28.6 54,32 40.3,35.4 47.6,47.6 35.4,40.3 32,54 28.6,40.3 16.4,47.6 23.7,35.4 10,32 23.7,28.6 16.4,16.4 28.6,23.7"/></svg> Horóscopo de Bardo</a>
 <nav aria-label="Principal"><a href="/api/">API</a>${telegram ? ` <a href="${e(telegram)}">Telegram</a>` : ""}</nav></header>
 <main id="contenido">${m.cuerpo}</main>
 <footer class="pie"><p>Cada noche, un bardo pesimista escribe el horóscopo de doce lenguajes de programación. Lo redacta una IA (GLM-5.3) y, si falla, tira de profecías escritas a mano.</p>

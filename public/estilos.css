@@ -185,6 +185,22 @@ code {
   color: var(--acento);
 }
 
+/* El sello del favicon y de la og:image, con los colores del tema */
+.sello {
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.15em;
+  vertical-align: -0.1em;
+}
+
+.sello circle {
+  fill: var(--acento);
+}
+
+.sello polygon {
+  fill: var(--fondo);
+}
+
 .cabecera nav {
   display: flex;
   gap: 1.25rem;
