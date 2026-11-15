@@ -36,13 +36,32 @@ export async function historial(db: D1Database, antesDe: string, dias = 14): Pro
     .prepare("SELECT profecias FROM dias WHERE fecha < ? ORDER BY fecha DESC LIMIT ?")
     .bind(antesDe, dias)
     .all<{ profecias: string }>();
+  return historialDe(results);
+}
+
+/** El historial a partir de filas ya leídas: las de la D1 del Worker o las de `wrangler d1 execute --json` */
+export function historialDe(filas: readonly { profecias: string }[]): Map<string, string[]> {
   const mapa = new Map<string, string[]>();
-  for (const fila of results) {
+  for (const fila of filas) {
     for (const p of JSON.parse(fila.profecias) as Profecia[]) {
       if (p.origen === "ia") mapa.set(p.signo, [...(mapa.get(p.signo) ?? []), p.texto]);
     }
   }
   return mapa;
+}
+
+const literal = (s: string): string => `'${s.replace(/'/g, "''")}'`;
+
+/**
+ * El INSERT de un día para `wrangler d1 execute --file` (scripts/sembrar.ts), que no admite parámetros.
+ * Sin reemplazar, como guardarDia: no pisa un día que ya existe. Reemplazando, cambia las profecías y el
+ * modelo, pero conserva creado_ms y telegram_ms: un día ya publicado no vuelve a salir en el canal.
+ */
+export function sqlSembrar(fecha: string, profecias: Profecia[], modelo: string | null, ahoraMs: number, reemplazar: boolean): string {
+  const valores = `(${literal(fecha)}, ${literal(JSON.stringify(profecias))}, ${modelo === null ? "NULL" : literal(modelo)}, ${Math.trunc(ahoraMs)})`;
+  return reemplazar
+    ? `INSERT INTO dias (fecha, profecias, modelo, creado_ms) VALUES ${valores} ON CONFLICT(fecha) DO UPDATE SET profecias = excluded.profecias, modelo = excluded.modelo;`
+    : `INSERT OR IGNORE INTO dias (fecha, profecias, modelo, creado_ms) VALUES ${valores};`;
 }
 
 // Se reserva antes de enviar: si D1 falla después del envío, el reintento no duplica el mensaje

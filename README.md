@@ -168,13 +168,23 @@ La generación llama de verdad a Z.ai con la `ZAI_API_KEY` de `.dev.vars` (sin e
 
 ## Operación
 
-Si se cuela una profecía que no debería, se borra el día y la web, la API y la tarjeta pasan a servirlo del banco:
+Si se cuela una profecía que no debería, el día se reemplaza con `npm run sembrar`, en dos pasos: primero se genera y se revisa, y después se escribe en la D1.
+
+```bash
+npm run sembrar -- 2026-12-01 --banco                   # el día del banco, en .wrangler/sembrar-2026-12-01.json
+npm run sembrar -- 2026-12-01                           # o uno nuevo con la IA (lee las keys de .dev.vars)
+npm run sembrar -- 2026-12-01 --aplicar --reemplazar    # lo escribe en la D1 remota
+```
+
+Entre los dos pasos se puede retocar el JSON a mano: al aplicar se vuelve a validar y, si algo no pasa, no se escribe nada. Sin `--reemplazar` no se pisa un día que ya exista, así que sirve también para sembrar días por adelantado. Reemplazar no cambia la marca de Telegram: un día ya publicado no vuelve a salir en el canal, y su mensaje se edita o se borra a mano. Con `--local`, el script trabaja con la D1 de `wrangler dev`.
+
+También se puede borrar el día, y la web, la API y la tarjeta pasan a servirlo del banco:
 
 ```bash
 npx wrangler d1 execute horoscopo-de-bardo --remote --command "DELETE FROM dias WHERE fecha = '2026-12-01'"
 ```
 
-El mensaje del canal de Telegram se edita o se borra a mano. Si se borra el día de hoy antes de las 07:00 UTC, no se publica en el canal; si se borra el de mañana antes de las 22:00 UTC, el reintento lo vuelve a generar.
+Si se borra el día de hoy antes de las 07:00 UTC, no se publica en el canal; si se borra el de mañana antes de las 22:00 UTC, el reintento lo vuelve a generar.
 
 ## Despliegue
 
