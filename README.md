@@ -161,7 +161,7 @@ npm run og               # vuelve a generar public/og.png
 Sin filas en la D1 local, la web sirve el día del banco. Para lanzar una hora concreta del cron, arranca con `npx wrangler dev --test-scheduled` y pide:
 
 ```bash
-curl "http://localhost:8787/cdn-cgi/handler/scheduled?cron=0+21,22,7,8+*+*+*&time=<epoch en segundos>"
+curl "http://localhost:8787/cdn-cgi/handler/scheduled?cron=0+21,22,7,8+*+*+*&time=<epoch en milisegundos>"
 ```
 
 La generación llama de verdad a Z.ai con la `ZAI_API_KEY` de `.dev.vars` (sin ella, el día sale del banco), y la publicación usa `TELEGRAM_BOT_TOKEN` si está.
