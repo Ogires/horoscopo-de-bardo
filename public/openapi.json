@@ -79,7 +79,7 @@
           "origen": {
             "type": "string",
             "enum": ["ia", "banco"],
-            "description": "ia: escrita por el modelo ese día. banco: del archivo escrito a mano, cuando la IA falla o una profecía no pasa la validación."
+            "description": "ia: escrita por el modelo ese día. banco: del archivo escrito de antemano, cuando la IA falla o una profecía no pasa la validación."
           }
         }
       },

@@ -69,7 +69,7 @@ curl -i https://bardo.webninja.fyi/api/v1/signos/rust   # mira la cabecera X-Bar
 }
 ```
 
-- **`origen`** vale `ia` si la profecía la escribió el modelo y `banco` si sale del archivo escrito a mano (ver [Cuando falla la IA](#cuando-falla-la-ia)).
+- **`origen`** vale `ia` si la profecía la escribió el modelo y `banco` si sale del archivo escrito de antemano (ver [Cuando falla la IA](#cuando-falla-la-ia)).
 - **El día es el de Madrid** y cambia a medianoche. Ninguna ruta enseña un día posterior a hoy ni anterior al lanzamiento.
 - **Alias:** `js`, `ts`, `py`, `cs`, `rs`, `golang`, `kt`, `hs` y `c-sharp` redirigen con un 308 al slug.
 - **Errores** en JSON y con la voz del Bardo: `{ "error": "signo_desconocido", "mensaje": "…" }`. 404 si el signo no existe o la fecha está fuera de rango, 400 si la fecha está mal escrita, 405 para lo que no sea `GET`, `HEAD` u `OPTIONS` y 429 si llegan demasiadas peticiones seguidas.
@@ -87,7 +87,7 @@ flowchart LR
   S --> Z["GLM-5.3 (Z.ai): una llamada con los doce signos"]
   Z --> V{"Validación"}
   V -->|"3 fallos o menos"| D[("D1: una fila por día")]
-  V -->|"más fallos o error"| B["Banco escrito a mano"]
+  V -->|"más fallos o error"| B["Banco escrito de antemano"]
   B --> D
   D --> W["Web, API y tarjeta SVG"]
   C2["Cron 07:00 UTC"] --> T["Canal de Telegram"]
@@ -111,7 +111,7 @@ Todas las tareas son idempotentes: repetirlas no duplica ni el día ni el mensaj
 
 ## Cuando falla la IA
 
-La demo nunca se queda en blanco. El banco de [`data/banco.json`](data/banco.json) tiene siete profecías escritas a mano por signo, y se elige una por un hash de la fecha, así que el mismo día da siempre la misma.
+La demo nunca se queda en blanco. El banco de [`data/banco.json`](data/banco.json) tiene siete profecías por signo, escritas de antemano y revisadas una a una, y se elige una por un hash de la fecha, así que el mismo día da siempre la misma.
 
 - **Falla un signo:** si una profecía no pasa la validación, solo esa sale del banco. Si fallan más de tres, se descarta la respuesta entera.
 - **Falla la IA:** si los dos intentos de la noche fallan, el día sale entero del banco y el bot avisa por privado al administrador.

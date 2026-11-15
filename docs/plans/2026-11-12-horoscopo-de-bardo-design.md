@@ -30,7 +30,7 @@ El diseño se revisó antes de construirlo con dos modelos externos (Gemini y GL
 4. **API pública:** `/api/v1/signos`, `/api/v1/hoy`, `/api/v1/signos/{signo}` y `/api/v1/dias/{fecha}`, con CORS abierto y un `openapi.json`.
 5. **Tarjeta SVG** (`/tarjeta/rust.svg`) para el README de GitHub, en modo claro y oscuro.
 6. **Canal de Telegram:** un mensaje diario con los doce signos y el enlace a la web. El mismo bot avisa por privado al administrador si algo falla.
-7. **Respaldo:** un banco de profecías escritas a mano para cuando falle la IA.
+7. **Respaldo:** un banco de profecías escritas de antemano para cuando falle la IA.
 
 Lo que queda fuera está en la sección 13.
 
@@ -88,7 +88,7 @@ src/
   api.ts
   tarjeta.ts           SVG
 data/
-  banco.json           profecías escritas a mano (7 por signo)
+  banco.json           profecías escritas de antemano (7 por signo)
   ganchos.json         hechos ciertos de cada lenguaje (15 por signo)
   matices.json         matices de reserva para «Compatible con» (10)
   puertos.json         puertos con su servicio (8080, 5432, 6379…)
@@ -181,7 +181,7 @@ Si algo se cuela, el día se reemplaza con el banco con un comando de `wrangler 
 
 ### 5.6 El banco
 
-`data/banco.json`: 7 profecías por signo (84 en total), escritas a mano y revisadas, con texto, «Evita» y compatible propio. Se elige por un hash de la fecha y el signo, así que el mismo día da siempre la misma. Si la IA cae varios días seguidos, el banco se recicla.
+`data/banco.json`: 7 profecías por signo (84 en total), escritas de antemano y revisadas una a una, con texto, «Evita» y compatible propio. Se elige por un hash de la fecha y el signo, así que el mismo día da siempre la misma. Si la IA cae varios días seguidos, el banco se recicla.
 
 Se usa en tres casos: un signo no pasa la validación, la IA falla en los dos intentos, o no hay fila para hoy (por ejemplo, si D1 no responde). La demo nunca se queda en blanco.
 
