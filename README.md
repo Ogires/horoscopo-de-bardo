@@ -4,7 +4,7 @@
 
 > *Tu signo es tu lenguaje. Y los astros no traen buenas noticias.*
 
-Cada día, un bardo pesimista escribe el horóscopo de doce lenguajes de programación: Rust, JavaScript, Python, Java, C#, Go, PHP, COBOL, TypeScript, SQL, Kotlin y Haskell. Cada profecía trae su puerto de la suerte, el signo con el que eres compatible y lo que conviene evitar hoy. Se lee en la web, en una API pública, en una tarjeta para el README de tu perfil de GitHub y en un canal de Telegram.
+Cada día, un bardo pesimista escribe el horóscopo de doce lenguajes de programación: Rust, JavaScript, Python, Java, C#, Go, PHP, COBOL, TypeScript, SQL, Kotlin y Haskell. Cada profecía trae su puerto de la suerte, el signo con el que eres compatible y lo que conviene evitar hoy. Se lee en la web, en una API pública, en una tarjeta para el README de tu perfil de GitHub y en un [canal de Telegram](https://t.me/horoscopodebardo).
 
 **▶ Consulta los astros en <https://bardo.webninja.fyi>**
 

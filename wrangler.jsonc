@@ -19,7 +19,7 @@
     // banco. Groq se probó y su español no llegaba al nivel
     "MODELO": "zai:glm-5.3",
     "MODELO_RESPALDO": "",
-    "TELEGRAM_CANAL": "@pendiente",
+    "TELEGRAM_CANAL": "@horoscopodebardo",
     "FECHA_LANZAMIENTO": "2026-11-14",
     "URL_PUBLICA": "https://bardo.webninja.fyi"
   }
