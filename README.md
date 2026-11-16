@@ -96,7 +96,7 @@ flowchart LR
 
 - **El código pone los hechos y la IA, la voz.** Antes de llamar al modelo, el código sortea para cada signo un **gancho**: un hecho cierto de su lenguaje («`NULL = NULL` no es verdadero: hay que usar `IS NULL`»), sacado de una lista de quince por signo que rotan en ciclos de quince días. También sortea el puerto de la suerte y el signo compatible. El modelo solo escribe el texto, el «Evita» y el matiz del compatible.
 - **Una sola llamada al día** a GLM-5.3 con los doce signos, en modo JSON. Para que no se repita, recibe lo que escribió para cada signo los tres días anteriores.
-- **Validación:** la forma del JSON, longitudes, palabras vetadas, nada de enlaces ni menciones, un «Evita» que no empiece por «no» y ningún texto que comparta seis palabras seguidas con lo publicado en los últimos catorce días, con el banco o con otro signo del mismo día.
+- **Validación:** la forma del JSON, longitudes, palabras vetadas, nada de enlaces ni menciones, un «Evita» que no empiece por «no», ningún texto cortado ni palabras pegadas («conCredentials», «elmaintenance») y ningún texto que comparta seis palabras seguidas con lo publicado en los últimos catorce días, con el banco o con otro signo del mismo día.
 
 Una sola expresión de cron, `0 21,22,7,8 * * *`, y el Worker decide qué toca según la hora:
 

@@ -57,6 +57,25 @@ describe("motivoInvalida", () => {
     expect(motivoInvalida(con({ evita: "abrir package.json sin miedo" }), "rust")).toBeNull();
     expect(motivoInvalida(con({ evita: "desplegar sin mirar 🚀" }), "rust")).toBe("emoji");
   });
+
+  it("caza palabras pegadas sin tocar identificadores camelCase ni else", () => {
+    // Visto con GLM-5.3 el 2026-11-16, en PHP: «y conCredentials de sobra»
+    const php = "in_array dirá que sí con una comparación floja. La cadena correcta entrará donde no debía, y conCredentials de sobra.";
+    expect(motivoInvalida(con({ texto: php }), "rust")).toBe("pegada");
+    expect(motivoInvalida(con({ evita: "fiarte delMaintenance" }), "rust")).toBe("pegada");
+    expect(motivoInvalida(con({ compatible: { signo: "go", matiz: "por elRefactor" } }), "rust")).toBe("pegada");
+    // Y en minúscula, como «…más que elmaintenance»: ninguna palabra española empieza por «el» y consonante, salvo ell- y elf-
+    expect(motivoInvalida(con({ evita: "temer elmaintenance del viernes" }), "rust")).toBe("pegada");
+    expect(motivoInvalida(con({ evita: "pegar elcommit sin mirar" }), "rust")).toBe("pegada");
+    for (const evita of [
+      "llamar a hashCode sin equals", "comparar con isNaN a ciegas", "activar noEmitOnError tarde",
+      "abusar de unsafePerformIO", "usar forEach con await", "olvidar el else del if", "un elseif eterno",
+      "elegir el elemento que elimina", "escribir en LaTeX de madrugada", "hablar con ellas del elfo",
+      "el elm de la tienda", "olvidar el tercer argumento true en in_array", "tocar el ELK de producción",
+    ]) {
+      expect(motivoInvalida(con({ evita }), "rust"), evita).toBeNull();
+    }
+  });
 });
 
 describe("repeticiones de 6 palabras", () => {

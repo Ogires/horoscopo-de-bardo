@@ -14,6 +14,17 @@ const VETADAS = [
 const RE_VETADA = new RegExp(`(?<![\\p{L}\\p{N}])(?:${VETADAS.join("|")})(?![\\p{L}\\p{N}])`, "iu");
 const RE_ENLACE = /https?:\/\/|www\.|@[\p{L}\p{N}_]|(?<![\p{L}\p{N}])[\p{L}\p{N}-]+\.(?:com|es|io|dev|org|net|fyi|app)(?![\p{L}\p{N}])/iu;
 const RE_EMOJI = /\p{Extended_Pictographic}/u;
+// Una palabra española pegada a la siguiente (visto con GLM-5.3: «conCredentials», «elmaintenance»).
+// Con mayúscula, solo tras artículos y preposiciones en minúscula: hashCode, isNaN o noEmitOnError
+// no empiezan por ninguno. En minúscula, solo «el» y consonante, que no empieza ninguna palabra
+// española salvo ell- y elf-; else, elsif, elm, elk y elt son inglesas
+const RE_PEGADA = new RegExp(
+  "(?<![\\p{L}\\p{N}_])(?:" +
+    "(?:el|la|los|las|un|una|unos|unas|al|del|de|con|en|por|para|que|sin)\\p{Lu}\\p{Ll}" +
+    "|el(?!se|sif|[mkt](?![\\p{L}\\p{N}]))[b-dg-hj-kmnñp-tv-z]" +
+    ")",
+  "u",
+);
 
 export interface Candidata {
   texto: string;
@@ -39,6 +50,7 @@ export function motivoInvalida(p: Candidata, signo: string): string | null {
   if (RE_VETADA.test(todo)) return "vetada";
   if (RE_ENLACE.test(todo)) return "enlace";
   if (RE_EMOJI.test(todo)) return "emoji";
+  if (RE_PEGADA.test(todo)) return "pegada";
   return null;
 }
 
